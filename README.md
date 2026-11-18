@@ -296,6 +296,12 @@ social-network-analysis/
 ├── README.md
 ├── docs/
 ├── eurovision_setup_collega/
+├── scripts/
+│   ├── build_graph.py
+│   ├── style_gexf.py
+│   └── gephi/
+├── output/
+│   └── gephi/eurovision.gephi
 │
 ├── RQ1/
 │   ├── src/
@@ -333,7 +339,7 @@ social-network-analysis/
         └── rq2/
 ```
 
-The `RQ1` and `RQ2` directories each contain the analysis scripts, the prepared voting matrices, the numerical results and the visualizations for the corresponding research question. The `docs` directory collects the project documents. Other research questions and project components can be added to the repository as development continues.
+The `RQ1` and `RQ2` directories each contain the analysis scripts, the prepared voting matrices, the numerical results and the visualizations for the corresponding research question. The `docs` directory collects the project documents. `scripts/` builds the vote networks for Gephi (see *Grafi e Gephi* below); its output in `output/` is regenerated and not versioned, except the Gephi project. Other research questions and project components can be added to the repository as development continues.
 
 ---
 
@@ -414,6 +420,153 @@ python src/make_country_attributes.py
 Any country ordering or random seed used above is explicit in the scripts: the Louvain seed affects the number of communities and modularity in the third decimal, which is why the stability analysis is part of the pipeline.
 
 ---
+
+## Grafi e Gephi (`scripts/build_graph.py`)
+
+Il dataset EurovisionAPI (non ufficiale, ma completo) e le API sono clonati
+nelle cartelle `dataset/` ed `eurovision-api/`:
+
+```bash
+git clone git@github.com:EurovisionAPI/dataset.git dataset
+git clone git@github.com:EurovisionAPI/eurovision-api.git eurovision-api
+```
+
+I grafi vengono costruiti da `scripts/build_graph.py`, che usa solo la
+standard library di Python 3. Lo script applica **le stesse regole della
+pipeline del gruppo** (`build_eurovision_data.py`, vedi
+`eurovision_setup_collega/`): con `--matrices` produce matrici e tabelle
+identiche byte per byte a quelle dei compagni.
+
+### Regole sui dati (condivise con il gruppo)
+
+- **Edizioni**: finali 2016–2026, 2020 escluso (annullato): 10 edizioni.
+  Il 2016 è il primo anno con punti di giuria e televoto separati.
+- **Solo Grand Final**: i paesi eliminati in semifinale votano nella finale
+  ma non possono ricevere punti.
+- **Giuria e televoto sempre separati** (`jury`, `public`): 10 edizioni × 2
+  livelli = **20 reti annuali**. `total` (somma dei due) esiste solo su
+  richiesta e non è usato nelle analisi.
+- **WLD** (voto del "resto del mondo", dal 2023) è escluso: non è un paese.
+- **Validazione**: nessun autovoto, punti in {0, 1–8, 10, 12}, ogni votante
+  vota tutti gli altri finalisti e assegna esattamente 1–8, 10, 12 (58 punti),
+  stessi votanti per giuria e televoto. Se un controllo fallisce lo script si
+  ferma.
+- **Zero ≠ cella vuota**: un'*opportunità* è una coppia (A, B) in cui A poteva
+  votare B. Uno 0 è un'opportunità senza punti (nessun arco, ma conta nelle
+  normalizzazioni); una cella vuota è un voto impossibile.
+
+Con lo snapshot attuale: 45 paesi, 43 finalisti almeno una volta (BA e ME
+solo votanti), 19.698 opportunità di voto nazionali.
+
+### Cosa rappresenta il grafo
+
+- **Nodo** = paese. `role` = `finalist` oppure `voter_only` (mai finalista
+  nel periodo scelto).
+- **Arco orientato `A -> B`** = `A` ha assegnato punti a `B`; peso = punti.
+- Su più edizioni (`--aggregate`) esiste un solo arco per coppia, con i punti
+  sommati e le statistiche per opportunità.
+
+### Uso rapido
+
+```bash
+python3 scripts/build_graph.py                    # 20 reti annuali -> output/per-year/
+python3 scripts/build_graph.py --year 2025        # 2025, giuria e televoto
+python3 scripts/build_graph.py --score jury       # solo giurie (10 reti)
+python3 scripts/build_graph.py --finalists-only   # sottorete dei finalisti (RQ1)
+python3 scripts/build_graph.py --matrices         # anche output/processed_data/ come i compagni
+python3 scripts/build_graph.py --aggregate --edge-weight per_opportunity  # rete 2016-2026 per livello
+python3 scripts/build_graph.py --year 2025 --min-points 8   # dicotomizzazione: solo voti >= 8
+python3 scripts/build_graph.py --country IT --ego-mode in   # chi vota l'Italia, per edizione
+python3 scripts/build_graph.py --all-countries    # una rete ego per paese (aggregata)
+python3 scripts/build_graph.py --list-countries
+```
+
+Esempio: `--year 2025` genera `output/per-year/2025_jury.gexf` e
+`2025_public.gexf`, entrambi con 37 nodi (26 finalisti + 11 votanti
+eliminati) e 370 archi (37 votanti × 10 paesi votati).
+
+### Opzioni
+
+| Opzione | Default | Significato |
+|---|---|---|
+| `--from`, `--to`, `--year` | `2016`, `2026` | Edizioni incluse (prima del 2016 non c'è la separazione giuria/televoto) |
+| `--score` | `both` | `both` (giuria e televoto separati), `jury`, `public`/`tele`, `total` |
+| `--aggregate` | off | Una rete sull'intero periodo invece di una per edizione |
+| `--finalists-only` | off | Solo i finalisti come votanti (reciprocità e triadi) |
+| `--min-points N` | `1` | Un voto diventa arco solo se vale almeno `N` punti |
+| `--edge-weight` | `sum` | Peso in Gephi: `sum`, `mean`, `per_opportunity`, `frequency` |
+| `--country CODE`, `--ego-mode` | –, `in` | Rete ego: voti ricevuti (`in`), dati (`out`) o entrambi |
+| `--all-countries` | off | Una rete ego per paese in `output/per-country/<livello>/` |
+| `--matrices` | off | Scrive `output/processed_data/` (matrici + `votes_master.csv` + `nodes.csv`) |
+| `--output-dir`, `--name` | `output/` | Cartella e nome dei file |
+
+### File prodotti
+
+Per ogni rete: `*.gexf` (Gephi), `*_nodes.csv`, `*_edges.csv`; in
+`per-year/` e `per-country/` anche un `index.csv` riassuntivo.
+
+Attributi degli archi:
+
+| Attributo | Significato |
+|---|---|
+| `weight` | Il valore scelto con `--edge-weight` |
+| `points` | Punti totali |
+| `n_votes` | Numero di volte in cui A ha dato punti a B |
+| `opportunities` | Edizioni in cui A poteva votare B |
+| `frequency` | `n_votes / opportunities` |
+| `weight_mean` | Punti medi quando A sceglie B (`points / n_votes`) |
+| `per_opportunity` | Punti medi per opportunità, zeri inclusi (`points / opportunities`) |
+| `first_year`, `last_year`, `years` | Copertura temporale |
+
+Attributi dei nodi: `role`, `years_finalist`, `years_voting`,
+`opportunities_in`, `opportunities_out`, `in_weight`, `out_weight`,
+`in_degree`, `out_degree`, `votes_received`, `votes_given`, `flag_url`.
+
+### Grafi già impostati per Gephi
+
+`scripts/style_gexf.py` (richiede `networkx`) scrive accanto a ogni GEXF un
+`*_styled.gexf` che Gephi apre già impostato: layout force-directed,
+colore = comunità Louvain (attributo `modularity_class`; grigio i paesi mai
+finalisti), dimensione = punti ricevuti, spessore archi = `weight`.
+
+```bash
+python3 scripts/build_graph.py --finalists-only --min-points 8
+python3 scripts/style_gexf.py output/per-year/*_finalists_min8.gexf
+gephi output/per-year/2025_public_finalists_min8_styled.gexf
+```
+
+Etichette e frecce si attivano a mano nel tab **Preview** (non sono salvabili
+nel GEXF).
+
+### Import in Gephi
+
+1. `File > Open` e selezionare il file `.gexf`.
+2. Layout force-directed (`ForceAtlas2` o `Fruchterman-Reingold`).
+3. Dimensione dei nodi: **Ranking** su `in_weight`; colore: `role`, oppure
+   `Modularity Class` dopo aver lanciato Louvain da **Statistics**.
+4. Spessore degli archi: **Ranking → Edges → weight → Thickness**; in
+   **Preview** attivare le frecce.
+
+In alternativa: `File > Import Spreadsheet`, prima `*_nodes.csv` poi
+`*_edges.csv`.
+
+### Note metodologiche
+
+- In una rete annuale ogni votante ha sempre esattamente 10 archi uscenti:
+  la struttura interessante sta nei pesi, nella reciprocità e nelle soglie
+  (`--min-points`), non nel grado uscente.
+- I non finalisti hanno solo archi uscenti: abbassano artificialmente
+  reciprocità e cicli. Per quelle metriche usare `--finalists-only`.
+- Nelle reti aggregate i punti grezzi favoriscono chi è stato più spesso in
+  finale: per confronti usare `per_opportunity` o `frequency`.
+- La validazione è interna; il confronto con i registri ufficiali EBU non è
+  stato fatto.
+
+---
+
+## Link utili
+
+- [Google Drive](https://drive.google.com/drive/folders/1RnNtQ6CDBwP8irH7YeirozYXSrutNwkV)
 
 ## Project Status
 
