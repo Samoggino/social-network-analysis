@@ -317,6 +317,21 @@ def main():
                'swaps_between_samples', 'acceptance_rate', 'fraction_edges_changed',
                'rhat', 'lag1_autocorrelation', 'status'], diag_rows)
 
+    # Il config va scritto insieme ai CSV e PRIMA del grafico: se il salvataggio
+    # del grafico fallisce, il JSON deve comunque descrivere i risultati salvati.
+    config = vars(args) | {
+        'years': YEARS, 'layers': LAYERS, 'metrics': METRICS, 'primary_metrics': PRIMARY,
+        'null_preserves': ['voting eligibility', 'per-voter ballot points',
+                           'recipient in-degree by finalist/non-finalist voter strata'],
+        'null_does_not_preserve': ['recipient in-strength', 'country affinity',
+                                   'historical dependencies'],
+        'warnings': ['MCMC mixing diagnostics are not a proof of uniform sampling',
+                     'p-values exploratory and conditional on observed contest years',
+                     'metric selection is exploratory/post hoc'],
+    }
+    with (RESULTS / 'rq1_popularity_robust_run_config.json').open('w', encoding='utf-8') as fh:
+        json.dump(config, fh, ensure_ascii=False, indent=2)
+
     spec = [('reciprocity_ge10', 'Reciprocita voti 10/12'),
             ('directed_transitive_closure', 'Chiusura transitiva binaria'),
             ('weighted_closure', 'Chiusura transitiva pesata')]
@@ -334,21 +349,11 @@ def main():
     axes[0].legend(fontsize=8)
     fig.suptitle('RQ1 - modello nullo condizionato all in-degree (verifiche MCMC)')
     fig.tight_layout()
-    fig.savefig(FIGURES / 'rq1_popularity_robust_comparison.png', dpi=170)
+    try:
+        fig.savefig(FIGURES / 'rq1_popularity_robust_comparison.png', dpi=170)
+    except OSError as exc:
+        print(f'AVVISO: grafico non salvato ({exc}); CSV e JSON sono stati salvati.', flush=True)
     plt.close(fig)
-
-    config = vars(args) | {
-        'years': YEARS, 'layers': LAYERS, 'metrics': METRICS, 'primary_metrics': PRIMARY,
-        'null_preserves': ['voting eligibility', 'per-voter ballot points',
-                           'recipient in-degree by finalist/non-finalist voter strata'],
-        'null_does_not_preserve': ['recipient in-strength', 'country affinity',
-                                   'historical dependencies'],
-        'warnings': ['MCMC mixing diagnostics are not a proof of uniform sampling',
-                     'p-values exploratory and conditional on observed contest years',
-                     'metric selection is exploratory/post hoc'],
-    }
-    with (RESULTS / 'rq1_popularity_robust_run_config.json').open('w', encoding='utf-8') as fh:
-        json.dump(config, fh, ensure_ascii=False, indent=2)
 
     flagged = [r for r in diag_rows if r[-1] != 'OK']
     print(f'File nuovi in {RESULTS}; grafico in {FIGURES}', flush=True)

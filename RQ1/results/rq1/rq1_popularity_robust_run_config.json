@@ -1,8 +1,8 @@
 {
-  "simulations": 120,
+  "simulations": 400,
   "chains": 4,
-  "burnin_per_edge": 12.0,
-  "thin_per_edge": 3.0,
+  "burnin_per_edge": 15.0,
+  "thin_per_edge": 4.0,
   "max_attempt_factor": 80,
   "seed": 20261118,
   "rhat_threshold": 1.1,

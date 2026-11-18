@@ -128,13 +128,24 @@ Monte Carlo p-values and multiple-testing corrections are reported for the prima
 
 ### Annual Voting Patterns
 
-The annual analysis reveals that:
+Means over the ten editions, finalists-only networks:
 
-- Overall binary reciprocity is relatively similar between jury and public networks.
-- High-scoring reciprocal exchanges are generally more frequent in public voting.
-- Public networks exhibit greater transitive closure in the observed data.
-- Some annual differences become less pronounced after controlling for the number of positive votes received by each finalist.
-- The distinction between exact triadic configurations and motifs embedded in larger structures is important for interpreting the results.
+| Annual metric | Jury | Public | Public − Jury | Expected by the popularity-controlled null | p (two-sided) | Holm |
+|---|---:|---:|---:|---:|---:|---:|
+| Binary reciprocity | 0.461 | 0.469 | +0.008 | +0.004 | 0.68 | 1.00 |
+| Reciprocity of 10/12-point votes | 0.136 | 0.214 | +0.078 | +0.008 | 0.0025 | 0.027 |
+| Directed transitive closure | 0.532 | 0.646 | +0.113 | +0.107 | 0.090 | 0.72 |
+| Weighted transitive closure | 0.292 | 0.358 | +0.065 | +0.075 | 0.0050 | 0.045 |
+
+Holm correction is applied across the 11 metrics of the popularity-controlled null model (400 samples per network, 4 chains; all R-hat and lag-1 diagnostics OK).
+
+- **Overall reciprocity** is almost identical between jury and public networks, and the difference is not significant.
+- **Reciprocal 10/12-point exchanges** are more frequent in public voting (higher in 8 of 10 editions) and the difference is far larger than the null expects. This is the main annual result.
+- **Transitive closure** is higher in public voting in every edition, but the popularity-controlled null reproduces almost all of the difference (+0.107 expected vs +0.113 observed): it is largely explained by the concentration of votes on a few popular finalists. The uniform-ballot null model, which does not control popularity, had found it significant.
+- **Weighted closure** is significant in the *opposite* direction: the public advantage is smaller than the null expects, so it is not evidence of stronger closed structures in public voting.
+- Exact `030C` cycles, more frequent in jury networks under the uniform null, are no longer different once popularity is controlled.
+
+**Caveat on the 10/12-point result.** The null model preserves the number of countries voting for each finalist (in-degree) but not the points they receive (in-strength). High points can therefore move freely in the simulations, so part of the 10/12-point reciprocity result may still reflect the concentration of top scores on a few favourites.
 
 ### Temporal Voting Patterns
 
@@ -347,13 +358,26 @@ The `RQ1` and `RQ2` directories each contain the analysis scripts, the prepared 
 
 ### Requirements
 
-The analysis uses Python and the scientific computing libraries NumPy, pandas, NetworkX, and Matplotlib.
+The analysis uses Python and the scientific computing libraries NumPy, NetworkX, and Matplotlib.
 
 Install the required packages:
 
 ```bash
-python -m pip install numpy pandas networkx matplotlib
+python -m pip install numpy networkx matplotlib
 ```
+
+The voting matrices in `RQ1/processed_data/matrices/` are produced by `eurovision_setup_collega/build_eurovision_data.py`; `python3 scripts/build_graph.py --matrices` writes identical matrices to `output/processed_data/`.
+
+### Costly results
+
+The two MCMC null models take hours to run. Their outputs are versioned so they do not need to be recomputed; rerunning the commands below overwrites them.
+
+| Outputs | Script | Parameters |
+|---|---|---|
+| `rq1_popularity_robust_*` and `figures/rq1/rq1_popularity_robust_comparison.png` | `rq1_popularity_control.py` | 400 samples, 4 chains, burn-in 15, thinning 4, seed 20261118 |
+| `rq1_temporal_null_*` and `figures/rq1/rq1_temporal_null_comparison.png` | `rq1_temporal_null_model.py` | 400 histories, 4 chains, burn-in 15, thinning 4, seed 20261118 |
+
+The parameters of each run are recorded in its `*_config.json`. The temporal null model also reads `rq1_temporal_pairs.csv` and `rq1_temporal_motifs.csv`: if `rq1_temporal_persistence_v2.py` is rerun on different data, the temporal null model must be rerun too. All other RQ1 outputs are regenerated in minutes.
 
 ### Running the analysis
 
