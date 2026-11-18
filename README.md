@@ -304,7 +304,7 @@ Modularity around 0.15 is what a random placement of the same weights produces o
 
 ### Language Beyond Geography
 
-Restricting the computation to pairs from different subregions, 18.2% of the choices go to a country sharing a language family against an expected 15.4% (excess ratio 1.19), and the figure is identical for juries and for the public. Language therefore has a small effect of its own, but it contributes equally to both voting levels and cancels in the comparison between them.
+Restricting the computation to pairs from different subregions, 18.2% of the choices go to a country sharing a language family against an expected 15.2% for juries and 15.5% for the public (excess ratio 1.20 and 1.18). The excess is significant for juries (exact p = 0.006, Holm 0.023) and in the same direction for the public in 9 of 10 editions, but not significant there after correction (Holm 0.082). Language therefore has a small effect of its own, but it contributes equally to both voting levels and cancels in the comparison between them.
 
 **RQ2 conclusion:** the difference between public and jury voting is **geographic**. Public communities coincide with subregions much more than jury communities, are far more stable across seeds, and public voters give more points to neighbours once these are chosen. Language has a small effect, identical in the two layers, and modularity taken alone is not evidence here.
 
@@ -366,30 +366,39 @@ social-network-analysis/
 │   └── figures/
 │       └── rq1/
 │
-└── RQ2/
+├── RQ2/
+│   ├── README.md
+│   ├── src/
+│   │   ├── build_eurovision_data.py
+│   │   ├── make_country_attributes.py
+│   │   ├── analyze_rq2.py
+│   │   ├── analyze_rq2_opportunity.py
+│   │   ├── analyze_rq2_partitions.py
+│   │   ├── analyze_rq2_consensus.py
+│   │   ├── analyze_rq2_modularity_null.py
+│   │   └── analyze_rq2_language_within.py
+│   │
+│   ├── processed_data/
+│   │   ├── matrices/
+│   │   └── tables/
+│   │
+│   ├── results/
+│   │   └── rq2/
+│   │
+│   └── figures/
+│       └── rq2/
+│
+└── RQ3/
     ├── README.md
     ├── src/
-    │   ├── build_eurovision_data.py
-    │   ├── make_country_attributes.py
-    │   ├── analyze_rq2.py
-    │   ├── analyze_rq2_opportunity.py
-    │   ├── analyze_rq2_partitions.py
-    │   ├── analyze_rq2_consensus.py
-    │   ├── analyze_rq2_modularity_null.py
-    │   └── analyze_rq2_language_within.py
-    │
-    ├── processed_data/
-    │   ├── matrices/
-    │   └── tables/
-    │
+    │   └── analyze_rq3.py
     ├── results/
-    │   └── rq2/
-    │
+    │   └── rq3/
     └── figures/
-        └── rq2/
+        └── rq3/
 ```
 
-The `RQ1` and `RQ2` directories each contain the analysis scripts, the prepared voting matrices, the numerical results and the visualizations for the corresponding research question. The `docs` directory collects the project documents. `scripts/` builds the vote networks for Gephi (see *Grafi e Gephi* below); its output in `output/` is regenerated and not versioned, except the Gephi project. Other research questions and project components can be added to the repository as development continues.
+The `RQ1`, `RQ2` and `RQ3` directories each contain the analysis scripts, the prepared voting matrices, the numerical results and the visualizations for the corresponding research question. The `docs` directory collects the project documents. `scripts/` builds the vote networks for Gephi (see *Grafi e Gephi* below); its output in `output/` is regenerated and not versioned, except the Gephi project. Other research questions and project components can be added to the repository as development continues.
 
 ---
 
@@ -483,7 +492,20 @@ python src/build_eurovision_data.py path/to/dataset-main/data/senior
 python src/make_country_attributes.py
 ```
 
-Any country ordering or random seed used above is explicit in the scripts: the Louvain seed affects the number of communities and modularity in the third decimal, which is why the stability analysis is part of the pipeline.
+Every random seed used above is explicit in the scripts, so the results are reproducible. A single Louvain run is not robust to the seed (mean ARI between two runs 0.51 for juries and 0.74 for the public), which is why the stability analysis and the consensus partition are part of the pipeline.
+
+---
+
+## Reproducing RQ3
+
+RQ3 (prestige and bridging) reads the matrices in `RQ1/processed_data/matrices/`, the attribute table in `RQ2/processed_data/tables/` and the RQ2 consensus partition in `RQ2/results/rq2/rq2_consensus_labels.csv` (rerun RQ3 if the RQ2 consensus changes). It runs in about one minute:
+
+```bash
+cd RQ3
+python src/analyze_rq3.py
+```
+
+Method, results and limitations are in `RQ3/README.md`.
 
 ---
 
@@ -638,6 +660,11 @@ In alternativa: `File > Import Spreadsheet`, prima `*_nodes.csv` poi
 
 - **RQ1:** Annual structural analysis, popularity-controlled null models, temporal persistence analysis, and temporal null model completed.
 - **RQ2:** Community structure, opportunity-corrected homophily, extensive and intensive margins, partition agreement, consensus partition, modularity null model and cross-region language test completed.
+- **RQ3:** Prestige (in-strength, PageRank, HITS), concentration of consensus and bridging with fixed geographic/cultural groups and with the RQ2 consensus communities completed, with a sensitivity check on finalists voted by fewer than 5 countries. Open items:
+  - [ ] **TODO — popularity-preserving null model.** The RQ3 tests use uniform random ballots, where no finalist is really popular, so the mechanical part of the prestige–participation correlation (0.25 under the null vs 0.72 / 0.82 observed) is probably underestimated. Rerun the prestige–participation correlation and the home excess against the RQ1 edge-swap null (`RQ1/src/rq1_popularity_control.py`: same ballots and same in-degree per finalist). Until then, result 4 of `RQ3/README.md` is an indication, not a confirmed result.
+  - [ ] **TODO — agree the formulation of RQ3 in the group.** The current one (prestige + bridging, see `RQ3/README.md`) has not been approved by the group yet.
+  - [ ] **TODO — write the RQ3 section of the report**, linking it to RQ1 (popularity there is a confounder to control, here it is the object of study) and to RQ2 (the home excess is the RQ2 homophily seen from the recipient's side), so that results are not repeated.
+  - [ ] **TODO — decide whether `RQ3/results/` and `RQ3/figures/` are versioned.** They are regenerated in about one minute.
 - **Other research questions:** Under development.
 
 ## Data Source

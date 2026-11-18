@@ -223,6 +223,7 @@ def main() -> None:
 
     rows: list[dict] = []
     tests: list[tuple] = []
+    memberships: list[tuple] = []
 
     for year in YEARS:
         for layer in LAYERS:
@@ -238,6 +239,13 @@ def main() -> None:
                 consensus = consensus_labels(co_assignment, k)
 
                 single = louvain_labels(undirected, nodes)
+
+                # Community of every country, with how firmly the runs agree:
+                # mean co-assignment with the other members of its community.
+                for i, node in enumerate(nodes):
+                    mates = (consensus == consensus[i]) & (np.arange(len(nodes)) != i)
+                    firmness = float(co_assignment[i, mates].mean()) if mates.any() else 1.0
+                    memberships.append((year, layer, scope, node, int(consensus[i]), firmness))
 
                 row: dict[str, object] = {
                     "year": year,
@@ -303,6 +311,11 @@ def main() -> None:
         "nmi_block", "nmi_block_null", "ari_block", "ari_block_null", "ari_block_single",
     ]
     save_csv(RESULTS_DIR / "rq2_consensus.csv", columns, [[r[c] for c in columns] for r in rows])
+    save_csv(
+        RESULTS_DIR / "rq2_consensus_labels.csv",
+        ["year", "layer", "scope", "country", "community", "mean_co_assignment_within"],
+        memberships,
+    )
     save_csv(
         RESULTS_DIR / "rq2_consensus_tests.csv",
         ["year", "layer", "scope", "attribute", "statistic", "observed", "null_mean", "p_one_sided"],

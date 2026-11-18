@@ -107,11 +107,11 @@ def cross_region_stats(
             target for target in eligible
             if voter_languages & attributes.get(target, {}).get("language_groups", set())
         }
-        slots_expected += len(shared) / len(eligible)
-
+        cross_choices = 0
         for _, target, data in graph.out_edges(voter, data=True):
             if target not in eligible:
                 continue
+            cross_choices += 1
             if target in shared:
                 chosen_same += 1
                 points_same += data["weight"]
@@ -119,8 +119,12 @@ def cross_region_stats(
                 chosen_other += 1
                 points_other += data["weight"]
 
-    expected = slots_expected / voters_count if voters_count else float("nan")
+        # The observed share pools the choices of all voters, so the benchmark
+        # weights each voter by the number of its cross-region choices.
+        slots_expected += cross_choices * len(shared) / len(eligible)
+
     slots_total = chosen_same + chosen_other
+    expected = slots_expected / slots_total if slots_total else float("nan")
 
     return {
         "voters": voters_count,
@@ -218,6 +222,30 @@ def main() -> None:
             for (label, observed, p), ph, pb in zip(
                 differences, holm(raw), benjamini_hochberg(raw)
             )
+        ],
+    )
+
+    # Is the excess itself real? Exact paired test over the editions of the
+    # observed share against the expected one, separately for each layer.
+    excess_tests = []
+    for layer in LAYERS:
+        rows = [row for row in summary if row["layer"] == layer]
+        expected = [row["share_slots_expected"] for row in rows]
+        for key, label in (("share_slots", "scelte"), ("share_points", "punti")):
+            observed = [row[key] for row in rows]
+            difference, p = sign_flip_test(expected, observed)
+            excess_tests.append((
+                layer, label, float(np.mean(observed)), float(np.mean(expected)), difference,
+                sum(o > e for o, e in zip(observed, expected)), p,
+            ))
+    excess_raw = [t[-1] for t in excess_tests]
+    save_csv(
+        RESULTS_DIR / "rq2_language_within_excess.csv",
+        ["layer", "quota", "osservato", "atteso", "differenza", "anni_sopra_atteso",
+         "p_esatto", "p_holm", "p_fdr"],
+        [
+            test + (ph, pb)
+            for test, ph, pb in zip(excess_tests, holm(excess_raw), benjamini_hochberg(excess_raw))
         ],
     )
 

@@ -99,6 +99,9 @@ one consensus partition: the co-assignment matrix becomes a distance (`1 − co-
 countries are merged with average linkage until the modal number of communities across runs
 is reached, and the resulting partition is compared with the geographic, linguistic and
 cultural ones. Its mean ARI with the individual runs measures how well it represents them.
+The community of every country is saved in `rq2_consensus_labels.csv`, together with its mean
+co-assignment with the other members of its community (how firmly the runs agree); RQ3 reads
+this file.
 
 ### 2.5 Modularity null (`src/analyze_rq2_modularity_null.py`)
 
@@ -118,8 +121,11 @@ on three of the forty networks.
 Language families are spatially clustered, so a linguistic effect may be geography in
 disguise. For every voter only finalists from *other* subregions are kept as eligible, and
 only the choices falling on them are counted. The benchmark is the share of those eligible
-countries sharing a language, averaged over voters. If language has an effect of its own the
-observed share must exceed it; if the effect is only geography the two coincide.
+countries sharing a language, weighted by the number of cross-region choices of each voter
+(the observed share pools all choices, so the benchmark must too). If language has an effect
+of its own the observed share must exceed it; if the effect is only geography the two
+coincide. The excess is tested per layer with the exact paired sign-flip test over the ten
+editions (`rq2_language_within_excess.csv`, Holm and BH over the four tests).
 
 ---
 
@@ -375,15 +381,20 @@ Only pairs from different subregions, averaged over the ten editions:
 | | Jury | Public |
 |---|---:|---:|
 | Choices to a shared language | 18.2% | 18.2% |
-| Expected, same-region pairs excluded | 15.4% | 15.4% |
-| Excess ratio | 1.19 | 1.19 |
+| Expected, same-region pairs excluded | 15.2% | 15.5% |
+| Excess ratio | 1.20 | 1.18 |
 | Points to a shared language | 19.8% | 19.0% |
-| Excess ratio (points) | 1.30 | 1.24 |
+| Excess ratio (points) | 1.31 | 1.23 |
 | Intensive margin | +0.65 | +0.22 |
+| Editions above expected (choices) | 9/10 | 9/10 |
+| Exact p, choices (Holm) | 0.006 (0.023) | 0.041 (0.082) |
+| Exact p, points (Holm) | 0.006 (0.023) | 0.061 (0.082) |
 
-Excluding same-subregion pairs barely reduces the relative excess (1.22 → 1.19 on choices), so
-the linguistic homophily of section 5.1 is **not** just geography in disguise: a small effect
-survives among countries that share nothing but a language family.
+Excluding same-subregion pairs barely reduces the relative excess (1.22 → about 1.19 on
+choices), so the linguistic homophily of section 5.1 is **not** just geography in disguise: a
+small effect survives among countries that share nothing but a language family. It is
+significant for juries after correction; for the public it is in the same direction in 9 of
+10 editions but does not survive the Holm correction.
 
 But it is the *same* effect in both layers: the paired differences are −0.04 pp (p = 0.97),
 −0.8 pp (p = 0.69) and −0.43 points (p = 0.34). Language contributes to both voting levels
