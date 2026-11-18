@@ -1,0 +1,13 @@
+﻿metrica,livello,ricostruito,riportato_nella_chat,differenza,esito
+numero di comunità,jury,4.200,4.000,+0.200,differisce
+numero di comunità,public,3.500,3.600,-0.100,differisce
+modularità Louvain,jury,0.154,0.158,-0.004,coincide
+modularità Louvain,public,0.160,0.165,-0.005,coincide
+assortatività geografica,jury,0.022,0.022,-0.000,coincide
+assortatività geografica,public,0.057,0.057,-0.000,coincide
+quota punti stessa sottoregione,jury,0.233,0.233,+0.000,coincide
+quota punti stessa sottoregione,public,0.295,0.295,+0.000,coincide
+quota punti stessa sottoregione (soli finalisti),jury,0.214,0.214,-0.000,coincide
+quota punti stessa sottoregione (soli finalisti),public,0.278,0.278,+0.000,coincide
+quota punti lingua condivisa,jury,0.263,0.289,-0.026,differisce
+quota punti lingua condivisa,public,0.272,0.305,-0.033,differisce

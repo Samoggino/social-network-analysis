@@ -167,6 +167,107 @@ They do not, by themselves, establish the causes of persistent voting relationsh
 
 ---
 
+## Research Question 2 — Community Structure and Homophily
+
+**How do community structure and homophily differ between jury and public voting, and do the detected communities reflect geographic or linguistic groups?**
+
+RQ2 moves from the structure of individual votes to the structure of the whole network: modularity, the geographic and linguistic composition of the vote flows, and the agreement between the communities found by modularity optimisation and external country attributes.
+
+### 1. Descriptive Structure
+
+For each of the 20 annual networks, on the undirected sum-weighted projection:
+
+- Louvain community detection, number of communities and modularity.
+- Newman assortativity by UN M49 subregion.
+- Share of points awarded inside the voter's own subregion, on the full network and on the finalists-only sub-network.
+
+The country attribute table classifies the 45 voting countries by UN M49 subregion, by broad language family (allowing several families for multilingual countries), and by a Eurovision cultural block used as a sensitivity check.
+
+**Script:** `RQ2/src/analyze_rq2.py`
+
+### 2. Opportunity Correction, Margins and Tests
+
+A country cannot vote for itself and can only vote for finalists, so part of the observed homophily is imposed by the composition of the final. The expected share of same-subregion choices under random selection is computed analytically for each voter as `|R_v| / |E_v|`, where `E_v` are the eligible finalists and `R_v` those from the same subregion. This gives a benchmark that does not require simulation.
+
+The analysis separates two margins:
+
+- **Extensive margin:** how often a same-subregion country enters the ten chosen ones.
+- **Intensive margin:** how many points it receives once chosen.
+
+Homophily is tested by permuting region and language labels across countries, which preserves the vote network and the size of every group. The two voting levels are compared with an exact paired sign-flip test over the ten editions, using all 2¹⁰ configurations, with Holm and Benjamini–Hochberg corrections.
+
+**Script:** `RQ2/src/analyze_rq2_opportunity.py`
+
+### 3. Partition Agreement and Stability
+
+The agreement between the Louvain partition and the geographic, linguistic and cultural partitions is measured with Normalised Mutual Information and the Adjusted Rand Index, against a permutation benchmark. Because NMI is not corrected for chance, ARI is the quantity used to decide whether the agreement is real.
+
+Louvain is stochastic, so the partition is also rerun over 100 seeds at three resolutions; the mean pairwise ARI between runs and the co-assignment matrix describe how reproducible a single run is.
+
+**Script:** `RQ2/src/analyze_rq2_partitions.py`
+
+---
+
+## RQ2 — Main Findings
+
+### Homophily and Opportunity Structure
+
+Choosing ten countries at random, **18.7%** of the choices would already fall inside the voter's own subregion. Both levels sit above that benchmark, so geographic homophily is not an artefact of the opportunity structure.
+
+| Mean 2016–2026 | Jury | Public |
+|---|---:|---:|
+| Choices inside the same subregion | 21.9% | 25.1% |
+| Excess ratio (choices) | 1.18 | 1.34 |
+| Points to the same subregion | 23.3% | 29.5% |
+| Excess ratio (points) | 1.25 | 1.59 |
+| Mean points if chosen, same subregion | 6.16 | 6.86 |
+| Mean points if chosen, other subregions | 5.70 | 5.46 |
+| Intensive margin | +0.47 | +1.40 |
+
+Public voting is more homophilic on all three margins: it chooses neighbours more often and gives them more points once chosen. The intensive margin of +1.4 points is consistent with the RQ1 result on 10- and 12-point exchanges.
+
+The paired comparison between the two levels is significant for every geographic metric and for none of the linguistic ones:
+
+| Metric | Public − Jury | Exact p | Holm |
+|---|---:|---:|---:|
+| Choices inside the same subregion | +3.2 pp | 0.0020 | 0.012 |
+| Points to the same subregion | +6.2 pp | 0.0020 | 0.012 |
+| Intensive margin, region | +0.93 points | 0.0098 | 0.039 |
+| Choices with a shared language | +0.45 pp | 0.744 | 1.000 |
+| Points to a shared language | +0.93 pp | 0.660 | 1.000 |
+| Intensive margin, language | +0.11 points | 0.701 | 1.000 |
+
+### Communities and Geography
+
+| Mean 2016–2026, full network | Jury | Public |
+|---|---:|---:|
+| NMI with UN M49 subregions | 0.273 | 0.432 |
+| *permutation benchmark* | *0.157* | *0.131* |
+| ARI with UN M49 subregions | 0.091 | 0.280 |
+| NMI with language families | 0.342 | 0.378 |
+| ARI with language families | 0.083 | 0.141 |
+| NMI with cultural blocks | 0.320 | 0.423 |
+
+Because NMI is not corrected for chance, its permutation baseline is 0.13–0.25 rather than zero. ARI has zero expected value under permutation, and it shows the actual result: jury communities have almost no agreement with geography, while public communities agree three times as much. The cultural-block partition behaves like the UN one, so the finding does not depend on the UN classification.
+
+### Stability
+
+| Mean pairwise ARI, 100 seeds | Jury | Public |
+|---|---:|---:|
+| Resolution 0.8 | 0.54 | 0.66 |
+| Resolution 1.0 | 0.51 | 0.74 |
+| Resolution 1.2 | 0.56 | 0.75 |
+
+With roughly 25 nodes, a single Louvain run is not a result: at resolution 1.0 the jury partition varies substantially across seeds. Public communities are both more geographic and more reproducible; jury communities are neither.
+
+**RQ2 conclusion:** the difference between public and jury voting is **entirely geographic**. Public communities coincide with subregions much more than jury communities, are far more stable across seeds, and public voters give more points to neighbours once these are chosen. On language the two levels are statistically indistinguishable, although both show a mild homophily against chance.
+
+### Language Coding
+
+With a defensible language coding the share of points to a shared language is 26.3% for juries and 27.2% for the public. The values reported in the original run (28.9% and 30.5%) are reproduced only by grouping Albania, Armenia, Azerbaijan, Cyprus, Georgia, Greece and Israel under a single `Other` label. The reconstruction documents the difference rather than hiding it, and keeps the linguistically defensible coding.
+
+---
+
 ## Methodological Limitations
 
 Several limitations should be considered when interpreting the results:
@@ -178,6 +279,11 @@ Several limitations should be considered when interpreting the results:
 - Some hypotheses and metrics were selected after preliminary exploration of the data.
 - Multiple-testing corrections do not completely eliminate post-selection concerns.
 - Persistent voting patterns cannot automatically be attributed to geographical, linguistic, cultural, or political factors.
+- The region and language variables describe countries, not songs, and the language coding is the most fragile construct in the analysis; an alternative coding is documented in `RQ2/README.md`.
+- Louvain is stochastic: community counts and modularity are reported together with a stability analysis, not as point estimates.
+- Modularity in RQ2 is descriptive; a degree-preserving null model for modularity is not yet implemented.
+- The RQ2 permutation tests shuffle labels across countries and therefore ignore spatial autocorrelation between neighbouring countries.
+- The opportunity correction, margin decomposition, partition agreement and stability analyses were added during the reconstruction and are exploratory extensions of the original specification.
 
 The reported p-values are conditional on the assumptions of the corresponding null models.
 
@@ -188,28 +294,46 @@ The reported p-values are conditional on the assumptions of the corresponding nu
 ```text
 social-network-analysis/
 ├── README.md
+├── docs/
 ├── eurovision_setup_collega/
 │
-└── RQ1/
+├── RQ1/
+│   ├── src/
+│   │   ├── analyze_rq1.py
+│   │   ├── rq1_popularity_control.py
+│   │   ├── rq1_temporal_persistence_v2.py
+│   │   └── rq1_temporal_null_model.py
+│   │
+│   ├── processed_data/
+│   │   └── matrices/
+│   │
+│   ├── results/
+│   │   └── rq1/
+│   │
+│   └── figures/
+│       └── rq1/
+│
+└── RQ2/
+    ├── README.md
     ├── src/
-    │   ├── analyze_rq1.py
-    │   ├── rq1_popularity_control.py
-    │   ├── rq1_temporal_persistence_v2.py
-    │   └── rq1_temporal_null_model.py
+    │   ├── build_eurovision_data.py
+    │   ├── make_country_attributes.py
+    │   ├── analyze_rq2.py
+    │   ├── analyze_rq2_opportunity.py
+    │   └── analyze_rq2_partitions.py
     │
     ├── processed_data/
-    │   └── matrices/
+    │   ├── matrices/
+    │   └── tables/
     │
     ├── results/
-    │   └── rq1/
+    │   └── rq2/
     │
     └── figures/
-        └── rq1/
+        └── rq2/
 ```
 
-The `RQ1` directory contains the analysis scripts, prepared voting matrices, numerical results, and visualizations.
-
-Other research questions and project components can be added to the repository as development continues.
+The `RQ1` and `RQ2` directories each contain the analysis scripts, the prepared voting matrices, the numerical results and the visualizations for the corresponding research question. The `docs` directory collects the project documents. Other research questions and project components can be added to the repository as development continues.
 
 ---
 
@@ -265,9 +389,36 @@ The MCMC analyses may require substantial computation time, depending on the ava
 
 ---
 
+## Reproducing RQ2
+
+The scripts use the voting matrices stored in `RQ2/processed_data/matrices/` and the country attribute table in `RQ2/processed_data/tables/`, so no external download is needed.
+
+Move into the RQ2 directory and run the three analysis steps:
+
+```bash
+cd RQ2
+python src/analyze_rq2.py
+python src/analyze_rq2_opportunity.py
+python src/analyze_rq2_partitions.py
+```
+
+The last script takes about a minute, as it reruns Louvain over 100 seeds and three resolutions for each of the 20 networks.
+
+To rebuild the matrices from the raw EurovisionAPI export instead:
+
+```bash
+python src/build_eurovision_data.py path/to/dataset-main/data/senior
+python src/make_country_attributes.py
+```
+
+Any country ordering or random seed used above is explicit in the scripts: the Louvain seed affects the number of communities and modularity in the third decimal, which is why the stability analysis is part of the pipeline.
+
+---
+
 ## Project Status
 
 - **RQ1:** Annual structural analysis, popularity-controlled null models, temporal persistence analysis, and temporal null model completed.
+- **RQ2:** Community structure, opportunity-corrected homophily, extensive and intensive margins, partition agreement and Louvain stability completed.
 - **Other research questions:** Under development.
 
 ## Data Source
