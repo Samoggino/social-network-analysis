@@ -1,0 +1,45 @@
+{
+  "histories": 400,
+  "chains": 4,
+  "burnin_per_edge": 15.0,
+  "thin_per_edge": 4.0,
+  "max_attempt_factor": 80,
+  "seed": 20261118,
+  "years": [
+    2016,
+    2017,
+    2018,
+    2019,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "metrics": [
+    "pairs_always_reciprocal",
+    "pairs_reciprocal_ge75",
+    "pairs_high_ge2",
+    "cycles_always",
+    "cycles_ge75",
+    "transitive_always",
+    "transitive_ge75"
+  ],
+  "primary_metrics": [
+    "pairs_always_reciprocal",
+    "pairs_reciprocal_ge75",
+    "pairs_high_ge2"
+  ],
+  "per_chain": 100,
+  "mean_chain_acceptance": 0.16558124881945174,
+  "null_preserves": "annual eligibility; fixed voting ballots; recipient in-degree stratified by finalist status",
+  "null_does_not_preserve": "recipient in-strength; historical dependence; cultural affinities",
+  "method": "20 independent annual MCMC streams within each history; 4+ chains; pair/triad universes fixed by opportunity years",
+  "warnings": [
+    "Null distribution only approximate; uniform sampling not proved",
+    "MCMC and multiple historical observations not equivalent to iid data",
+    "Three primary metrics were selected after inspecting data; adjusted p-values exploratory",
+    "Selected individual pairs must not be tested without correcting selection"
+  ]
+}

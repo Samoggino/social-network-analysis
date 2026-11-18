@@ -1,0 +1,7 @@
+﻿layer,unit,min_opportunity_years,eligible_units,ever_observed,always_observed,frequency_ge75pct,mean_frequency_including_zeros
+jury,cycle,3,8086,1933,7,19,0.06798081339881983
+jury,transitive,3,24258,7296,37,104,0.09031011860593853
+jury,reciprocal_pair,3,543,310,6,15,0.1922264608728697
+public,cycle,3,8086,1827,7,23,0.06676506326827869
+public,transitive,3,24258,8291,62,173,0.10734293841207025
+public,reciprocal_pair,3,543,279,15,26,0.19184498231459557

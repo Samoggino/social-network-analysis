@@ -1,0 +1,59 @@
+{
+  "simulations": 120,
+  "chains": 4,
+  "burnin_per_edge": 12.0,
+  "thin_per_edge": 3.0,
+  "max_attempt_factor": 80,
+  "seed": 20261118,
+  "rhat_threshold": 1.1,
+  "lag1_threshold": 0.3,
+  "years": [
+    2016,
+    2017,
+    2018,
+    2019,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "layers": [
+    "jury",
+    "public"
+  ],
+  "metrics": [
+    "binary_reciprocity",
+    "weighted_reciprocity",
+    "reciprocity_ge10",
+    "directed_transitive_closure",
+    "weighted_closure",
+    "all_transitive_motif_count",
+    "all_transitive_motif_intensity",
+    "all_cycle_count",
+    "all_cycle_motif_intensity",
+    "triads_030T",
+    "triads_030C"
+  ],
+  "primary_metrics": [
+    "reciprocity_ge10",
+    "directed_transitive_closure",
+    "weighted_closure"
+  ],
+  "null_preserves": [
+    "voting eligibility",
+    "per-voter ballot points",
+    "recipient in-degree by finalist/non-finalist voter strata"
+  ],
+  "null_does_not_preserve": [
+    "recipient in-strength",
+    "country affinity",
+    "historical dependencies"
+  ],
+  "warnings": [
+    "MCMC mixing diagnostics are not a proof of uniform sampling",
+    "p-values exploratory and conditional on observed contest years",
+    "metric selection is exploratory/post hoc"
+  ]
+}
