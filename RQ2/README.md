@@ -6,10 +6,10 @@ geographic and linguistic groups, and is the difference between the two voting l
 geographic or cultural?
 
 This folder contains the analysis scripts, the prepared voting matrices, the numerical
-results and the figures for RQ2. The pipeline is rebuilt from scratch: the original scripts
-were exchanged as attachments and are not available, so every script here was written again
-and validated against the numbers reported in the project conversation (see
-[Validation](#validation-against-the-original-run)).
+results and the figures for RQ2. The pipeline was rebuilt from scratch — the original scripts
+were exchanged as attachments and are not available — and every script here was validated
+against the numbers reported in the project conversation (see
+[Validation](#4-validation-against-the-original-run)).
 
 ---
 
@@ -51,7 +51,7 @@ research question can be run independently.
 
 ## 2. Methods
 
-### Stage 1 — Descriptive structure (`src/analyze_rq2.py`)
+### 2.1 Descriptive structure (`src/analyze_rq2.py`)
 
 For each of the 20 networks, on the undirected sum-weighted projection:
 
@@ -61,7 +61,7 @@ For each of the 20 networks, on the undirected sum-weighted projection:
 - share of points awarded inside the voter's own subregion, computed both on the full
   network and on the sub-network of countries that reached the final.
 
-### Stage 2 — Opportunity correction, margins and tests (`src/analyze_rq2_opportunity.py`)
+### 2.2 Opportunity correction, margins and tests (`src/analyze_rq2_opportunity.py`)
 
 A country cannot vote for itself and can only vote for finalists, so part of the observed
 homophily is forced by the composition of the final. For each voter *v* the expected share
@@ -82,7 +82,7 @@ Within each family of 20 tests, p-values are corrected with Holm and Benjamini�
 Finally the two levels are compared with an exact paired sign-flip test over the ten years:
 swapping jury and public within each edition exhausts all 2¹⁰ = 1,024 configurations.
 
-### Stage 3 — Partitions and stability (`src/analyze_rq2_partitions.py`)
+### 2.3 Partitions and stability (`src/analyze_rq2_partitions.py`)
 
 Agreement between the Louvain partition and (a) UN M49 subregions, (b) primary language
 family, (c) Eurovision cultural block, measured with NMI and ARI. NMI is not corrected for
@@ -91,6 +91,35 @@ about 0.13–0.25, not zero. A permutation benchmark (500 draws) quantifies that
 
 Stability is measured by rerunning Louvain over 100 seeds at three resolutions and computing
 the mean pairwise ARI between runs, together with the co-assignment matrix.
+
+### 2.4 Consensus partition (`src/analyze_rq2_consensus.py`)
+
+Because a single run is not a result, the 200 runs at the default resolution are turned into
+one consensus partition: the co-assignment matrix becomes a distance (`1 − co-assignment`),
+countries are merged with average linkage until the modal number of communities across runs
+is reached, and the resulting partition is compared with the geographic, linguistic and
+cultural ones. Its mean ARI with the individual runs measures how well it represents them.
+
+### 2.5 Modularity null (`src/analyze_rq2_modularity_null.py`)
+
+Modularity depends on density and on the degree sequence, so its raw value is not evidence.
+The null keeps the binary structure and permutes the edge weights across it (500 draws): the
+set of possible votes is unchanged, every edge survives, and only the association between
+"this pair" and "these points" is destroyed. The observed modularity is compared with the
+modularity that the same Louvain procedure reaches on the permuted networks.
+
+A topological rewiring is not used: the projection of a final is nearly half complete
+(density 0.44 on the full network, 0.62 on the finalists-only network), double edge swaps have
+almost no admissible moves, and in a test run they failed to produce a single valid replicate
+on three of the forty networks.
+
+### 2.6 Language with geography held constant (`src/analyze_rq2_language_within.py`)
+
+Language families are spatially clustered, so a linguistic effect may be geography in
+disguise. For every voter only finalists from *other* subregions are kept as eligible, and
+only the choices falling on them are counted. The benchmark is the share of those eligible
+countries sharing a language, averaged over voters. If language has an effect of its own the
+observed share must exceed it; if the effect is only geography the two coincide.
 
 ---
 
@@ -107,7 +136,10 @@ python src/make_country_attributes.py
 
 python src/analyze_rq2.py
 python src/analyze_rq2_opportunity.py
-python src/analyze_rq2_partitions.py     # about one minute
+python src/analyze_rq2_partitions.py        # about 1 minute
+python src/analyze_rq2_consensus.py         # about 20 seconds
+python src/analyze_rq2_modularity_null.py   # about 45 seconds
+python src/analyze_rq2_language_within.py
 ```
 
 Results are written to `results/rq2/`, figures to `figures/rq2/`.
@@ -146,9 +178,13 @@ Mean values over 2016–2026, rebuilt vs reported:
 | Share of points to a shared language | 0.263 | 0.289 | 0.272 | 0.305 | see below |
 
 The 2016 edition, used as a preview in the original run, is reproduced to the decimal:
-**18.6%** of jury points and **27.4%** of public points go to the voter's own subregion.
-The Balkan community described for the 2016 public network (Bosnia and Herzegovina,
-Croatia, Montenegro, North Macedonia, Serbia, Slovenia) is also recovered identically.
+**18.6%** of jury points and **27.4%** of public points go to the voter's own subregion, and
+the Balkan community described for the 2016 public network (Bosnia and Herzegovina, Croatia,
+Montenegro, North Macedonia, Serbia, Slovenia) is recovered by the same seeded run.
+
+That community is a property of that particular run, not of the data: section 5.5 shows that
+the consensus over 200 runs does not isolate it, which is precisely why the stability
+analysis exists.
 
 ### Two discrepancies, and why
 
@@ -162,9 +198,7 @@ Armenian, Turkic, Greek, Kartvelian and Semitic as distinct families) the result
 **26.3% jury / 27.2% public**, not 28.9% / 30.5%. The reported values are reproduced
 (28.8% / 30.6%) only by grouping Albania, Armenia, Azerbaijan, Cyprus, Georgia, Greece and
 Israel under a single `Other` label, which would put Georgian and Hebrew in the same
-language family. The original conclusion ("language has a weaker effect than geography")
-survives, but stage 2 makes it sharper: on language there is no difference between the two
-levels at all.
+language family. The reconstruction documents the difference rather than hiding it.
 
 ---
 
@@ -205,8 +239,6 @@ Homophily tests, number of networks significant after Benjamini–Hochberg corre
 | Language, point share | 14/20 |
 | Language, choice share | 7/20 |
 
-Homophily is therefore real for language as well, but weaker and less systematic.
-
 ### 5.2 Paired comparison between the levels
 
 | Metric | Public − Jury | Exact p | Holm |
@@ -240,7 +272,7 @@ NMI and ARI must be read together. With 4–5 groups the permutation baseline of
 0.13–0.25, so NMI alone would make even random partitions look geographic. ARI has zero
 expected value under permutation, and it is what settles the question: **the jury partition
 has almost no agreement with geography (ARI 0.09), while the public partition is three times
-higher (0.28)**. For language both levels sit barely above chance.
+higher (0.28)**.
 
 Paired comparison of the agreement scores:
 
@@ -270,44 +302,130 @@ classification.
 On the finalists-only sub-network the values rise (0.66 vs 0.78 at resolution 1.0) but the
 ordering never changes.
 
-Two consequences:
+**With 26 nodes, a single Louvain run is not a result.** A mean ARI of 0.51 means that two
+seeds out of three produce different partitions; the community structure must be presented
+as a stable core, not as a single coloured graph.
 
-1. **With 26 nodes, a single Louvain run is not a result.** A mean ARI of 0.51 means that
-   two seeds out of three produce different partitions. Communities must be presented with
-   the co-assignment matrix rather than as a single coloured graph.
-2. **The public partition is far more reproducible than the jury one**, and this is the same
-   message as NMI and ARI, obtained independently. Public communities are both geographic
-   and stable; jury communities are neither.
+### 5.5 Consensus partition
+
+200 runs per network at the default resolution, average-linkage consensus at the modal
+number of communities:
+
+| Mean 2016–2026, full network | Jury | Public |
+|---|---:|---:|
+| Communities in the consensus | 3.8 | 3.5 |
+| Communities in the individual runs (mean) | 4.04 | 3.54 |
+| Modularity of the consensus | 0.156 | 0.161 |
+| **Mean ARI between consensus and the runs** | **0.604** | **0.806** |
+| ARI with subregions | 0.100 | **0.273** |
+| *same, single seeded run* | *0.091* | *0.280* |
+| ARI with language families | 0.070 | 0.165 |
+| ARI with cultural blocks | 0.062 | 0.171 |
+
+The consensus is a much better summary of the ensemble than any single run: it agrees with
+the individual runs at 0.60 (jury) and 0.81 (public), against the 0.51 and 0.74 that two runs
+agree with each other. But it points to the same conclusion as section 5.3 — **ARI 0.10
+against geography for juries, 0.27 for the public** — and the paired comparison confirms it:
+
+| Metric | Public − Jury | Exact p | Holm |
+|---|---:|---:|---:|
+| ARI with subregions | +0.173 | 0.0039 | 0.027 |
+| NMI with subregions | +0.166 | 0.0039 | 0.027 |
+| ARI with cultural blocks | +0.109 | 0.0020 | 0.020 |
+| ARI with language families | +0.095 | 0.031 | 0.063 |
+| ARI between consensus and runs | +0.202 | 0.0020 | 0.020 |
+
+The result therefore does not depend on the arbitrary choice of a seed: with a partition
+that represents 200 runs, geography still separates the two levels, and the language gap
+remains below the corrected threshold. The consensus of the 2016 public network, for
+instance, groups a large Western-Asian/Eastern-European block together with Spain, France and
+Italy, and a second block running from Austria to Sweden through Croatia, Hungary, Poland and
+Serbia — recognisably geographic, but not the Balkan community of the single run.
+
+### 5.6 Is modularity larger than chance?
+
+500 weight permutations per network, topology fixed:
+
+| Mean, full network | Jury | Public |
+|---|---:|---:|
+| Density of the projection | 0.445 | 0.443 |
+| Observed modularity | 0.154 | 0.160 |
+| Modularity under the null | 0.162 | 0.154 |
+| Null standard deviation | 0.010 | 0.010 |
+| Excess over the null | −0.008 | +0.006 |
+| z-score | −0.82 | +0.51 |
+| Networks with p < 0.05 | 2/10 | 2/10 |
+
+On the finalists-only network the density is 0.62 and the excess is +0.003 (jury) and +0.006
+(public), with 3/10 and 2/10 networks significant.
+
+**The modularity of these networks is what a random placement of the same weights produces.**
+The value around 0.15 must therefore not be read as evidence of clear communities: with 25–45
+nodes and a nearly half-complete projection, that is simply what Louvain returns. The layer
+difference is also not significant (+0.014, exact p = 0.053, Holm 0.211).
+
+This is the technical counterpart of the stability result, and it changes what can be claimed:
+the evidence for geographic structure in RQ2 comes from the agreement between partitions and
+labels (section 5.3) and from the vote flows (section 5.1), **not** from modularity.
+
+### 5.7 Language with geography held constant
+
+Only pairs from different subregions, averaged over the ten editions:
+
+| | Jury | Public |
+|---|---:|---:|
+| Choices to a shared language | 18.2% | 18.2% |
+| Expected, same-region pairs excluded | 15.4% | 15.4% |
+| Excess ratio | 1.19 | 1.19 |
+| Points to a shared language | 19.8% | 19.0% |
+| Excess ratio (points) | 1.30 | 1.24 |
+| Intensive margin | +0.65 | +0.22 |
+
+Excluding same-subregion pairs barely reduces the relative excess (1.22 → 1.19 on choices), so
+the linguistic homophily of section 5.1 is **not** just geography in disguise: a small effect
+survives among countries that share nothing but a language family.
+
+But it is the *same* effect in both layers: the paired differences are −0.04 pp (p = 0.97),
+−0.8 pp (p = 0.69) and −0.43 points (p = 0.34). Language contributes to both voting levels
+equally, so it cancels in the comparison between them. That is exactly why the layer
+difference is geographic and not cultural.
 
 ---
 
 ## 6. Conclusion
 
-> The difference between public and jury voting is **entirely geographic**. Public
-> communities coincide with subregions much more than jury communities (ARI 0.28 vs 0.09),
-> they are far more stable across seeds (0.74 vs 0.51), and public voters give more points
-> to neighbours once these are chosen. On language the two levels are statistically
-> indistinguishable, although both show a mild homophily against chance.
+> The difference between public and jury voting is **geographic**. Public communities
+> coincide with subregions much more than jury communities (ARI 0.28 vs 0.09, unchanged when
+> a 200-run consensus replaces a single seed), they are far more stable across seeds (0.74 vs
+> 0.51), and public voters give more points to neighbours once these are chosen (+1.4 against
+> +0.5). Language does have a small effect of its own — about +19% over chance even between
+> different subregions — but it is identical in the two layers, so it cannot explain the
+> difference. Modularity, taken alone, is not evidence here: it does not exceed a
+> weight-shuffling null.
 
 ---
 
 ## 7. Limitations
 
 - Region and language are attributes of countries, not of songs: a country competing in a
-  non-national language is still classified by its main national language. Coding language
-  from the `lyrics/` folders of the raw dataset is left as a robustness check.
-- The language variable is the most fragile construct of the whole analysis. Results are
-  reported for a defensible coding, and the effect of the alternative coding used in the
-  original run is documented above rather than hidden.
-- Louvain is stochastic; community counts and modularity must be read together with the
-  stability analysis, not as point estimates.
-- Modularity is reported descriptively. A degree-preserving null model for modularity, as
-  used in RQ1, is not yet implemented for RQ2.
-- Permutation tests shuffle labels across countries and therefore ignore spatial
-  autocorrelation between neighbouring countries; they answer a narrower question than a
-  spatially constrained null model would.
-- The analyses of stages 2 and 3 did not exist in the original run and were added during the
-  reconstruction; they should be read as exploratory extensions.
+  non-national language is still classified by its main national language. The dataset does
+  provide the language of each song through the `lyrics/o_<language>.txt` files, which makes a
+  song-level check possible; it is not implemented here, and note that 245 of 429 songs
+  (57%) are in English, which would weaken the variable rather than strengthen it.
+- The language variable is the most fragile construct of the analysis: families are broad
+  (Germanic, Slavic, Romance), and the effect of the alternative coding used in the original
+  run is documented in section 4 rather than hidden.
+- The permuted-label nulls ignore spatial autocorrelation between neighbouring countries, and
+  the cross-region test of section 5.7 conditions on a post-treatment variable: subregion
+  composition is not random, so the estimate is descriptive rather than causal.
+- Modularity is reported with a null, and that null is deliberately conservative in one
+  direction: permuting weights breaks the association between a country's strength and its
+  scores, which is a real feature of the data.
+- Louvain remains stochastic even in its consensus form: the consensus summarises the runs, it
+  does not make them identical.
+- The analyses of sections 2.2–2.6 were added during the reconstruction and are exploratory
+  extensions of the original specification, with the multiple-testing corrections reported
+  alongside every comparison.
 
 ---
 

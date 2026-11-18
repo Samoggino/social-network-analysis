@@ -217,6 +217,24 @@ Louvain is stochastic, so the partition is also rerun over 100 seeds at three re
 
 **Script:** `RQ2/src/analyze_rq2_partitions.py`
 
+### 4. Consensus Partition
+
+Since a single run is not a result, the 200 runs at the default resolution are combined into one consensus partition: the co-assignment matrix becomes a distance, countries are merged with average linkage until the modal number of communities is reached, and the consensus is used as the partition to report.
+
+**Script:** `RQ2/src/analyze_rq2_consensus.py`
+
+### 5. Modularity Null
+
+Modularity depends on density and on the degree sequence, so its raw value is not evidence. The binary structure is kept and the edge weights are permuted across it (500 draws), which tests whether the large weights are placed where they are by chance. A topological rewiring is not used, because the projection of a final is nearly half complete and edge swaps have almost no admissible moves.
+
+**Script:** `RQ2/src/analyze_rq2_modularity_null.py`
+
+### 6. Language with Geography Held Constant
+
+Language families are spatially clustered, so a linguistic effect may be geography in disguise. For every voter only finalists from other subregions are kept as eligible, and the observed choices are compared with the share of those eligible countries sharing a language. A language effect that survives is an effect of its own.
+
+**Script:** `RQ2/src/analyze_rq2_language_within.py`
+
 ---
 
 ## RQ2 — Main Findings
@@ -261,6 +279,8 @@ The paired comparison between the two levels is significant for every geographic
 
 Because NMI is not corrected for chance, its permutation baseline is 0.13–0.25 rather than zero. ARI has zero expected value under permutation, and it shows the actual result: jury communities have almost no agreement with geography, while public communities agree three times as much. The cultural-block partition behaves like the UN one, so the finding does not depend on the UN classification.
 
+The same conclusion holds when a **consensus** partition built from 200 runs replaces a single seed: ARI 0.10 for juries and 0.27 for the public, while the consensus agrees with the individual runs at 0.60 and 0.81 respectively.
+
 ### Stability
 
 | Mean pairwise ARI, 100 seeds | Jury | Public |
@@ -271,7 +291,22 @@ Because NMI is not corrected for chance, its permutation baseline is 0.13–0.25
 
 With roughly 25 nodes, a single Louvain run is not a result: at resolution 1.0 the jury partition varies substantially across seeds. Public communities are both more geographic and more reproducible; jury communities are neither.
 
-**RQ2 conclusion:** the difference between public and jury voting is **entirely geographic**. Public communities coincide with subregions much more than jury communities, are far more stable across seeds, and public voters give more points to neighbours once these are chosen. On language the two levels are statistically indistinguishable, although both show a mild homophily against chance.
+### Modularity Against a Null
+
+| Mean, full network | Jury | Public |
+|---|---:|---:|
+| Observed modularity | 0.154 | 0.160 |
+| Modularity under weight permutation | 0.162 | 0.154 |
+| Excess | −0.008 | +0.006 |
+| Networks with p < 0.05 | 2/10 | 2/10 |
+
+Modularity around 0.15 is what a random placement of the same weights produces on a projection of this density, so it is reported but not used as evidence. The evidence for geographic structure comes from the agreement between partitions and labels and from the vote flows.
+
+### Language Beyond Geography
+
+Restricting the computation to pairs from different subregions, 18.2% of the choices go to a country sharing a language family against an expected 15.4% (excess ratio 1.19), and the figure is identical for juries and for the public. Language therefore has a small effect of its own, but it contributes equally to both voting levels and cancels in the comparison between them.
+
+**RQ2 conclusion:** the difference between public and jury voting is **geographic**. Public communities coincide with subregions much more than jury communities, are far more stable across seeds, and public voters give more points to neighbours once these are chosen. Language has a small effect, identical in the two layers, and modularity taken alone is not evidence here.
 
 ### Language Coding
 
@@ -292,9 +327,10 @@ Several limitations should be considered when interpreting the results:
 - Persistent voting patterns cannot automatically be attributed to geographical, linguistic, cultural, or political factors.
 - The region and language variables describe countries, not songs, and the language coding is the most fragile construct in the analysis; an alternative coding is documented in `RQ2/README.md`.
 - Louvain is stochastic: community counts and modularity are reported together with a stability analysis, not as point estimates.
-- Modularity in RQ2 is descriptive; a degree-preserving null model for modularity is not yet implemented.
+- Modularity in RQ2 is tested against a weight-shuffling null rather than a topological one, because the projection is nearly half complete and edge swaps have almost no admissible moves.
 - The RQ2 permutation tests shuffle labels across countries and therefore ignore spatial autocorrelation between neighbouring countries.
-- The opportunity correction, margin decomposition, partition agreement and stability analyses were added during the reconstruction and are exploratory extensions of the original specification.
+- The cross-region language test conditions on subregion composition, which is not random, so its estimate is descriptive rather than causal.
+- The opportunity correction, margin decomposition, partition agreement, stability, consensus and null-model analyses were added during the reconstruction and are exploratory extensions of the original specification.
 
 The reported p-values are conditional on the assumptions of the corresponding null models.
 
@@ -337,7 +373,10 @@ social-network-analysis/
     │   ├── make_country_attributes.py
     │   ├── analyze_rq2.py
     │   ├── analyze_rq2_opportunity.py
-    │   └── analyze_rq2_partitions.py
+    │   ├── analyze_rq2_partitions.py
+    │   ├── analyze_rq2_consensus.py
+    │   ├── analyze_rq2_modularity_null.py
+    │   └── analyze_rq2_language_within.py
     │
     ├── processed_data/
     │   ├── matrices/
@@ -430,9 +469,12 @@ cd RQ2
 python src/analyze_rq2.py
 python src/analyze_rq2_opportunity.py
 python src/analyze_rq2_partitions.py
+python src/analyze_rq2_consensus.py
+python src/analyze_rq2_modularity_null.py
+python src/analyze_rq2_language_within.py
 ```
 
-The last script takes about a minute, as it reruns Louvain over 100 seeds and three resolutions for each of the 20 networks.
+The partition and stability script takes about a minute, as it reruns Louvain over 100 seeds and three resolutions for each of the 20 networks; the modularity null takes about forty-five seconds.
 
 To rebuild the matrices from the raw EurovisionAPI export instead:
 
@@ -595,7 +637,7 @@ In alternativa: `File > Import Spreadsheet`, prima `*_nodes.csv` poi
 ## Project Status
 
 - **RQ1:** Annual structural analysis, popularity-controlled null models, temporal persistence analysis, and temporal null model completed.
-- **RQ2:** Community structure, opportunity-corrected homophily, extensive and intensive margins, partition agreement and Louvain stability completed.
+- **RQ2:** Community structure, opportunity-corrected homophily, extensive and intensive margins, partition agreement, consensus partition, modularity null model and cross-region language test completed.
 - **Other research questions:** Under development.
 
 ## Data Source

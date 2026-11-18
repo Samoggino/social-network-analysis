@@ -1,0 +1,11 @@
+﻿metrica,differenza_televoto_giurie,p_esatto,p_holm,p_fdr
+ARI con le sottoregioni (all),0.1727675603,0.00390625,0.02734375,0.0055803571
+NMI con le sottoregioni (all),0.1661817274,0.00390625,0.02734375,0.0055803571
+ARI con le famiglie linguistiche (all),0.0950681249,0.03125,0.0625,0.0347222222
+ARI con i blocchi culturali (all),0.1085932129,0.001953125,0.01953125,0.0055803571
+ARI medio tra consenso ed esecuzioni (all),0.2016282853,0.001953125,0.01953125,0.0055803571
+ARI con le sottoregioni (finalists),0.1883739089,0.00390625,0.02734375,0.0055803571
+NMI con le sottoregioni (finalists),0.1885028794,0.00390625,0.02734375,0.0055803571
+ARI con le famiglie linguistiche (finalists),0.060645412,0.2734375,0.2734375,0.2734375
+ARI con i blocchi culturali (finalists),0.0875106031,0.001953125,0.01953125,0.0055803571
+ARI medio tra consenso ed esecuzioni (finalists),0.0915449003,0.0078125,0.02734375,0.009765625

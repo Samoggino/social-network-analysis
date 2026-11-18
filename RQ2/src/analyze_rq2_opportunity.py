@@ -58,7 +58,12 @@ def save_csv(path: Path, columns: list[str], rows: list[tuple]) -> None:
     with path.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(columns)
-        writer.writerows(rows)
+        writer.writerows(
+            [
+                [round(value, 10) if isinstance(value, float) else value for value in row]
+                for row in rows
+            ]
+        )
 
 
 def load_attributes(path: Path) -> dict[str, dict[str, object]]:
