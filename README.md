@@ -391,7 +391,9 @@ social-network-analysis/
 └── RQ3/
     ├── README.md
     ├── src/
-    │   └── analyze_rq3.py
+    │   ├── analyze_rq3.py
+    │   ├── analyze_rq3_popularity_null.py
+    │   └── analyze_rq3_ranking.py
     ├── results/
     │   └── rq3/
     └── figures/
@@ -498,12 +500,16 @@ Every random seed used above is explicit in the scripts, so the results are repr
 
 ## Reproducing RQ3
 
-RQ3 (prestige and bridging) reads the matrices in `RQ1/processed_data/matrices/`, the attribute table in `RQ2/processed_data/tables/` and the RQ2 consensus partition in `RQ2/results/rq2/rq2_consensus_labels.csv` (rerun RQ3 if the RQ2 consensus changes). It runs in about one minute:
+RQ3 (prestige and bridging) reads the matrices in `RQ1/processed_data/matrices/`, the attribute table in `RQ2/processed_data/tables/` and the RQ2 consensus partition in `RQ2/results/rq2/rq2_consensus_labels.csv` (rerun RQ3 if the RQ2 consensus changes). It runs in about a minute and a half:
 
 ```bash
 cd RQ3
 python src/analyze_rq3.py
+python src/analyze_rq3_popularity_null.py
+python src/analyze_rq3_ranking.py
 ```
+
+The first script writes the main results, the second re-tests the bridging measures against a null that keeps each finalist's popularity fixed, and the third writes the ranked table of prestige; the last one reads the output of the first.
 
 Method, results and limitations are in `RQ3/README.md`.
 
@@ -660,11 +666,11 @@ In alternativa: `File > Import Spreadsheet`, prima `*_nodes.csv` poi
 
 - **RQ1:** Annual structural analysis, popularity-controlled null models, temporal persistence analysis, and temporal null model completed.
 - **RQ2:** Community structure, opportunity-corrected homophily, extensive and intensive margins, partition agreement, consensus partition, modularity null model and cross-region language test completed.
-- **RQ3:** Prestige (in-strength, PageRank, HITS), concentration of consensus and bridging with fixed geographic/cultural groups and with the RQ2 consensus communities completed, with a sensitivity check on finalists voted by fewer than 5 countries. Open items:
-  - [ ] **TODO — popularity-preserving null model.** The RQ3 tests use uniform random ballots, where no finalist is really popular, so the mechanical part of the prestige–participation correlation (0.25 under the null vs 0.72 / 0.82 observed) is probably underestimated. Rerun the prestige–participation correlation and the home excess against the RQ1 edge-swap null (`RQ1/src/rq1_popularity_control.py`: same ballots and same in-degree per finalist). Until then, result 4 of `RQ3/README.md` is an indication, not a confirmed result.
+- **RQ3:** Prestige (in-strength, PageRank, HITS), concentration of consensus and bridging with fixed geographic/cultural groups and with the RQ2 consensus communities completed, with a sensitivity check on finalists voted by fewer than 5 countries. The bridging measures and the prestige–participation correlation are also tested against a popularity-preserving null, which confirms them: the correlation is 0.72 / 0.82 observed against 0.01 / −0.05 under that null, so it is bloc support and not a sample-size effect. Open items:
+  - [x] **Popularity-preserving null model.** Done in `RQ3/src/analyze_rq3_popularity_null.py`: in-degree and in-strength are held fixed per finalist and only the identity of its voters is redrawn. Result 4 of `RQ3/README.md` is therefore confirmed, and the 0.25 of the uniform ballots turns out to be an artefact of that null rather than a popularity effect.
   - [ ] **TODO — agree the formulation of RQ3 in the group.** The current one (prestige + bridging, see `RQ3/README.md`) has not been approved by the group yet.
   - [ ] **TODO — write the RQ3 section of the report**, linking it to RQ1 (popularity there is a confounder to control, here it is the object of study) and to RQ2 (the home excess is the RQ2 homophily seen from the recipient's side), so that results are not repeated.
-  - [ ] **TODO — decide whether `RQ3/results/` and `RQ3/figures/` are versioned.** They are regenerated in about one minute.
+  - [ ] **TODO — decide whether `RQ3/results/` and `RQ3/figures/` are versioned.** They are regenerated in about a minute and a half.
 - **Other research questions:** Under development.
 
 ## Data Source
