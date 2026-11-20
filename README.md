@@ -398,9 +398,19 @@ social-network-analysis/
     │   └── rq3/
     └── figures/
         └── rq3/
+└── RQ4/
+    ├── README.md
+    ├── src/
+    │   ├── analyze_rq4_layer_similarity.py
+    │   ├── analyze_rq4_temporal_stability.py
+    │   └── rq4_common.py
+    ├── results/
+    │   └── rq4/
+    └── figures/
+        └── rq4/
 ```
 
-The `RQ1`, `RQ2` and `RQ3` directories each contain the analysis scripts, the prepared voting matrices, the numerical results and the visualizations for the corresponding research question. The `docs` directory collects the project documents. `scripts/` builds the vote networks for Gephi (see *Grafi e Gephi* below); its output in `output/` is regenerated and not versioned, except the Gephi project. Other research questions and project components can be added to the repository as development continues.
+The `RQ1`, `RQ2`, `RQ3` and `RQ4` directories each contain the analysis scripts, the prepared voting matrices, the numerical results and the visualizations for the corresponding research question. The `docs` directory collects the project documents. `scripts/` builds the vote networks for Gephi (see *Grafi e Gephi* below); its output in `output/` is regenerated and not versioned, except the Gephi project. Other research questions and project components can be added to the repository as development continues.
 
 ---
 
@@ -512,6 +522,22 @@ python src/analyze_rq3_ranking.py
 The first script writes the main results, the second re-tests the bridging measures against a null that keeps each finalist's popularity fixed, and the third writes the ranked table of prestige; the last one reads the output of the first.
 
 Method, results and limitations are in `RQ3/README.md`.
+
+---
+
+## Reproducing RQ4
+
+RQ4 (layer similarity and temporal stability) reads the same matrices in `RQ1/processed_data/matrices/`. It runs in about 25 seconds total:
+
+```bash
+cd RQ4
+python src/analyze_rq4_layer_similarity.py      # ~5 seconds
+python src/analyze_rq4_temporal_stability.py    # ~18 seconds
+```
+
+The first script compares jury vs public on the same dyads within each edition; the second compares the same layer across editions. Both use QAP permutation tests (1000 and 500 replicates respectively) and the exact paired sign-flip test for the lag-1 layer comparison.
+
+Method, results and limitations are in `RQ4/README.md`.
 
 ---
 
@@ -671,7 +697,11 @@ In alternativa: `File > Import Spreadsheet`, prima `*_nodes.csv` poi
   - [ ] **TODO — agree the formulation of RQ3 in the group.** The current one (prestige + bridging, see `RQ3/README.md`) has not been approved by the group yet.
   - [ ] **TODO — write the RQ3 section of the report**, linking it to RQ1 (popularity there is a confounder to control, here it is the object of study) and to RQ2 (the home excess is the RQ2 homophily seen from the recipient's side), so that results are not repeated.
   - [ ] **TODO — decide whether `RQ3/results/` and `RQ3/figures/` are versioned.** They are regenerated in about a minute and a half.
-- **Other research questions:** Under development.
+- **RQ4:** Layer similarity (jury vs public on the same dyads within an edition) and temporal stability (same layer across editions) completed. QAP permutation tests on the common eligible dyads, residualised Pearson to remove voter/recipient effects, exact paired sign-flip test for the lag-1 layer comparison. Key results: within-year Spearman 0.311 (10/10), residual Pearson 0.241 (10/10), Jaccard 0.384 (10/10); lag-1 residual Pearson 0.118 jury vs 0.471 public, televised layer is more stable on all three key statistics (Spearman +0.165, residual Pearson +0.353, Jaccard +0.067, all Holm 0.0117). Open items:
+  - [ ] **TODO — agree the formulation of RQ4 in the group.** The current one (similarity + stability, see `RQ4/README.md`) has not been approved by the group yet.
+  - [ ] **TODO — write the RQ4 section of the report**, linking it to RQ1 (temporal persistence there is binary/edge-based, here it is whole-matrix weighted with confounds removed) and to RQ3 (layer similarity is the bridge between prestige and bridging), so that results are not repeated.
+  - [ ] **TODO — decide whether `RQ4/results/` and `RQ4/figures/` are versioned.** They are regenerated in about 25 seconds.
+- **RQ5 (optional, predictive):** Defined in the group proposal (`Progetto_Eurovision_SNA_Proposta_Completa_RQ5.pdf`), not yet started.
 
 ## Data Source
 
