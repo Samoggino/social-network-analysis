@@ -93,6 +93,7 @@ Il confronto lag-1 tra jury e public è testato con il test esatto *sign-flip* a
 - **Effetti residui.** La residualizzazione rimuove gli effetti di livello votante e destinatario in modo lineare (due-vie centering). Interazioni non lineari o effetti di ordine superiore non sono catturati.
 - **Esclusione del WLD.** Dal 2023 metà del voto pubblico è *Rest of the World*; escludere il WLD lascia la metà nazionale. La stabilità del layer public è quindi misurata sulla parte collegata ai paesi, e le conclusioni valgono per quella parte.
 - **Allineamento sui paesi comuni.** Nel confronto temporale si allineano solo i paesi presenti in entrambe le edizioni. Paesi che entrano/escono dall'insieme dei finalisti non contribuiscono alla stabilità; questo è corretto per la domanda posta ma riduce il campione ai lag maggiori.
+- **Coppie consecutive non indipendenti.** Il confronto jury vs public al lag 1 usa 9 coppie di edizioni, ma ogni edizione intermedia compare in due coppie, quindi le 9 differenze non sono indipendenti e il p del sign-flip è un po' ottimista. Il risultato resta netto (9/9 coppie per Spearman e residual Pearson).
 - **Nessuna inferenza causale.** La stabilità osservata è descrittiva: non dice *perché* il pattern persiste (geografia, cultura, qualità della canzone, inerzia del voto).
 
 ## Output

@@ -125,7 +125,7 @@ The last two rows compare with *uniform* ballots only; section 8 shows that with
 | Prestige–participation, subregion | −0.14 | 0.81 | 1.00 |
 | Home excess, subregion, ≥ 5 voters | +3.06 | 0.0059 | 0.047 |
 | Participation ratio, subregion, ≥ 5 voters | −3.71 | 0.0020 | 0.023 |
-| Home excess, RQ2 community | +0.88 | 0.168 | 0.336 |
+| Home excess, RQ2 community | +0.88 | 0.168 | 0.633 |
 
    The layer difference in home excess is confirmed under both nulls. The participation ratio keeps the same sign but does not survive Holm without the ≥ 5 voters filter, and the prestige–participation rows are indistinguishable between the layers once popularity is fixed, which is consistent with that correlation being mechanical. The community rows lose significance entirely — which is what the circularity warning predicts, and a further reason to compare layers on the fixed groups.
 
