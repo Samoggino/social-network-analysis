@@ -554,7 +554,7 @@ Method, results and limitations are in `RQ4/README.md`.
 
 ## Reproducing RQ5
 
-RQ5 (walk-forward prediction of the top-3 recipients) reads the matrices in `RQ1/processed_data/matrices/` and the attribute table in `RQ2/processed_data/tables/`. It runs in about three seconds:
+RQ5 (walk-forward prediction of the top-3 recipients) reads the matrices in `RQ1/processed_data/matrices/` and the attribute table in `RQ2/processed_data/tables/`. It runs in about seven seconds:
 
 ```bash
 cd RQ5
@@ -727,10 +727,10 @@ In alternativa: `File > Import Spreadsheet`, prima `*_nodes.csv` poi
   - [ ] **TODO — agree the formulation of RQ4 in the group.** The current one (similarity + stability, see `RQ4/README.md`) has not been approved by the group yet.
   - [ ] **TODO — write the RQ4 section of the report**, linking it to RQ1 (temporal persistence there is binary/edge-based, here it is whole-matrix weighted with confounds removed) and to RQ3 (layer similarity is the bridge between prestige and bridging), so that results are not repeated.
   - [ ] **TODO — decide whether `RQ4/results/` and `RQ4/figures/` are versioned.** They are regenerated in about 25 seconds.
-- **RQ5 (optional, predictive):** Walk-forward prediction of the top-3 recipients (12, 10 and 8 points) completed, following the group proposal. Four folds with test editions 2023, 2024, 2025 and 2026, four nested logistic models (M0a popularity, M0b historical tie, M1 geography and language, M2 SNA communities), everything rebuilt from the training editions only, evaluated with Hit@3, NDCG@3 and MRR per edition and layer plus a stratified bootstrap over voters. Key results: every model beats the constrained random baseline (Hit@3 0.22 vs 0.12 for juries, 0.39 vs 0.12 for the public); the direct historical tie is the decisive feature for the public (+0.183, 4/4 editions, 95% CI [0.144, 0.224]) and adds nothing for juries; geography and language add nothing beyond the tie (−0.002 both layers, CI around zero); the RQ2 communities add nothing (M2−M1 +0.002 jury and +0.005 public, CI includes zero). The communities are a real description of the networks but not a source of out-of-sample predictive gain, and no group bonus is forced. Open items:
+- **RQ5 (optional, predictive):** Walk-forward prediction of the top-3 recipients (12, 10 and 8 points) completed, following the group proposal. Four folds with test editions 2023, 2024, 2025 and 2026, four nested logistic models (M0a popularity, M0b historical tie, M1 geography and language, M2 SNA communities), everything rebuilt from the training editions only (the features of each training edition from the editions before it, like the test edition), evaluated with Hit@3, NDCG@3 and MRR per edition and layer plus a stratified bootstrap over voters. Key results: every model beats the constrained random baseline (Hit@3 0.23–0.25 vs 0.12 for juries, 0.43 vs 0.12 for the public with the history features); the direct historical tie is the decisive feature for the public (+0.217, 4/4 editions, 95% CI [0.173, 0.263]) and adds little for juries (+0.012, CI around zero); geography and language add nothing beyond the tie (−0.011 jury, +0.000 public, CI around zero); the SNA communities add nothing (M2−M1 −0.005 jury and +0.002 public, CI includes zero). The communities are a real description of the networks but not a source of out-of-sample predictive gain, and no group bonus is forced. Open items:
   - [ ] **TODO — agree the formulation of RQ5 in the group.** The current one (walk-forward top-3, see `RQ5/README.md`) has not been approved by the group yet.
   - [ ] **TODO — write the RQ5 section of the report**, linking it to RQ2 (the communities are real but redundant with geography, language and the dyadic history) and to RQ4 (the dyadic persistence translates into prediction, especially for the public), so that results are not repeated.
-  - [ ] **TODO — decide whether `RQ5/results/` and `RQ5/figures/` are versioned.** They are regenerated in about three seconds.
+  - [ ] **TODO — decide whether `RQ5/results/` and `RQ5/figures/` are versioned.** They are regenerated in about seven seconds.
   - [ ] **TODO — optional inner temporal validation** to choose the L2 penalty and the smoothing constant; currently both are fixed ex ante, as the proposal allows.
 
 ## Data Source

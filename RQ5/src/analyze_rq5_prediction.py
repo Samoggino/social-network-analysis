@@ -25,6 +25,15 @@ rates, communities, scaling and coefficients are rebuilt inside each fold from
 the training editions only, so no information from the test edition enters the
 model.
 
+Training rows are built the same way as the test rows: the features of a
+training edition y come only from the training editions *before* y, never from
+y itself. Otherwise the features of a training row would contain its own
+target (the tie i -> j of 2019 would include the 2019 vote), the regression
+would learn inflated coefficients for the history features, and those
+coefficients would not hold on the test edition, whose features come from the
+past only. The first MIN_HISTORY editions of each fold therefore serve only as
+history and do not produce training rows.
+
 Metrics. Hit@3 (share of the three true recipients found among the first
 three, which equals precision and recall at 3 for a single ballot), NDCG@3 and
 MRR as secondary measures. The comparison with the constrained random baseline
@@ -65,6 +74,7 @@ from rq5_common import (
 
 SEED = 42
 N_BOOTSTRAP = 2000
+MIN_HISTORY = 2   # editions of history required before a training edition gives rows
 COMPARISONS = (
     ("M0b", "M0a"),   # value of the direct historical tie
     ("M1", "M0b"),    # value of geography and language
@@ -236,9 +246,14 @@ def main() -> None:
             training = Training(matrices, layer, train_years, universe, attributes)
 
             parts, targets = [], []
-            for year in train_years:
+            row_years = train_years[MIN_HISTORY:]
+            for position, year in enumerate(train_years):
+                if position < MIN_HISTORY:
+                    continue
+                # Features from the editions before `year` only (see docstring).
+                history = Training(matrices, layer, train_years[:position], universe, attributes)
                 countries, W, E = matrices[(year, layer)]
-                X, y, _ = build_design(training, countries, W, E)
+                X, y, _ = build_design(history, countries, W, E)
                 parts.append(X)
                 targets.append(y)
             X_train = np.vstack(parts)
@@ -260,7 +275,7 @@ def main() -> None:
                     "test_year": test_year, "layer": layer, "model": name, **entry,
                 })
             diagnostics.append([
-                test_year, layer, len(train_years), X_train.shape[0], int(y_train.sum()),
+                test_year, layer, len(train_years), len(row_years), X_train.shape[0], int(y_train.sum()),
                 training.p0, training.community_info["communities"],
                 training.community_info["modularity"], summary["M0a"]["voters"],
                 float(np.mean([r["random_hit3"] for r in fold_records])),
@@ -293,7 +308,7 @@ def main() -> None:
     )
     save_csv(
         RESULTS_DIR / "rq5_fold_diagnostics.csv",
-        ["test_year", "layer", "training_editions", "training_dyads", "positives",
+        ["test_year", "layer", "training_editions", "row_editions", "training_dyads", "positives",
          "p0", "communities", "modularity", "voters", "random_hit3"],
         diagnostics,
     )
