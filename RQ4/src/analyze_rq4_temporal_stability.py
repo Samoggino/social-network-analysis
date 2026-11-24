@@ -8,9 +8,9 @@ The first RQ4 script compares the two layers within an edition. This one puts
 the same layer next to itself in different editions and asks how much of the
 dyadic pattern survives.
 
-For every pair of editions with a given lag (1 to 9 years) the two networks are
+For every pair of editions with a given lag (1 to 9 editions) the two networks are
 aligned on the countries present in both, and the comparison is computed on the
-dyads that were eligible votes in both years:
+dyads that were eligible votes in both editions:
 
 * Spearman and Pearson correlation of the points;
 * Pearson correlation after removing voter and recipient effects, so that a
@@ -194,7 +194,7 @@ def plot_stability(summary: dict, heatmaps: dict) -> None:
         if position == 0:
             ax.tick_params(labelbottom=False)
         else:
-            ax.set_xlabel("Lag between editions (years)")
+            ax.set_xlabel("Lag between editions")
 
     for column, layer in zip((1, 2), LAYERS):
         ax = fig.add_subplot(grid[:, column])

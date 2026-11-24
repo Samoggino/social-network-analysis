@@ -30,9 +30,9 @@ Una quinta quantità è calcolata ma secondaria: `spearman_both_positive`, la co
 
 Tutti i p-value sono QAP: le etichette dei paesi di un layer sono permutate (righe e colonne insieme), 1000 volte, e la statistica è ricalcolata sulle celle che restano ammissibili in entrambe le reti.
 
-### 2. Stabilità temporale (stesso layer, anni diversi) — `analyze_rq4_temporal_stability.py`
+### 2. Stabilità temporale (stesso layer, edizioni diverse) — `analyze_rq4_temporal_stability.py`
 
-La stessa rete è messa a confronto con se stessa in edizioni diverse. Per ogni lag da 1 a 9 anni, le due reti sono allineate sui paesi presenti in entrambe, e il confronto è calcolato sulle diadi che erano voti ammissibili in entrambi gli anni.
+La stessa rete è messa a confronto con se stessa in edizioni diverse. Per ogni lag da 1 a 9 edizioni, le due reti sono allineate sui paesi presenti in entrambe, e il confronto è calcolato sulle diadi che erano voti ammissibili in entrambe le edizioni. Il lag è misurato in edizioni e non in anni: 2020 manca, quindi un lag di 1 è sempre l'edizione successiva (2019 → 2021 compreso).
 
 Le stesse quattro statistiche (`spearman`, `pearson`, `residual_pearson`, `jaccard`) sono calcolate per ogni coppia di edizioni. La statistica riportata per un lag è la media sulle coppie con quel lag. Il suo p-value deriva da un nullo che permuta le etichette dei paesi di un anno indipendentemente dentro ogni coppia e poi media nello stesso modo: il nullo si riferisce quindi alla statistica media, non a una singola coppia.
 
@@ -57,7 +57,7 @@ Il confronto lag-1 tra jury e public è testato con il test esatto *sign-flip* a
 - **Jaccard (0.384)** è ben sopra il nullo (0.249), confermando che gli stessi *tipi* di scambi (chi vota chi) ricorrono nei due layer.
 - La correlazione ristretta alle diadi dove entrambi danno punti (Spearman 0.191, solo 3/10 significative) dice che quando entrambi concordano che c'è uno scambio, l'entità dei punti è poco allineata.
 
-### Stabilità temporale (stesso layer, anni diversi)
+### Stabilità temporale (stesso layer, edizioni diverse)
 
 | Layer | Lag | Coppie | Spearman medio | Nullo medio | q95 nullo | p | Residual Pearson medio | Jaccard medio |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -84,15 +84,15 @@ Il confronto lag-1 tra jury e public è testato con il test esatto *sign-flip* a
   - Spearman: public 0.263 vs jury 0.099, differenza +0.165, 9/9 coppie, p = 0.0039 (Holm 0.0117)
   - Residual Pearson: public 0.471 vs jury 0.118, differenza +0.353, 9/9, p = 0.0039 (Holm 0.0117)
   - Jaccard: public 0.359 vs jury 0.292, differenza +0.067, 8/9, p = 0.0117 (Holm 0.0117)
-- La stabilità decade con il lag ma resta significativamente sopra il nullo fino al lag 6 per il televoto e al lag 8 per le giurie (sulla residual Pearson; la Spearman grezza è più rumorosa).
-- Le 680–741 diadi comuni al lag 1 scendono a ~550–600 ai lag maggiori; la dimensione campionaria effettiva è comunque limitata dalla struttura delle eleggibilità.
+- La stabilità **non decade** in modo monotono: la residual Pearson resta tra 0.07 e 0.18 per le giurie e tra 0.38 e 0.47 per il televoto a tutti i lag, e sulla residual Pearson entrambi i layer sono significativi in **tutti e 9 i lag**. La Spearman grezza è più rumorosa: significativa in 7/9 lag per le giurie (lag 7, p = 0.154, e lag 9, p = 0.056) e in 9/9 per il televoto.
+- Al lag 1 le diadi comuni vanno da 496 (2025–2026) a 741 (2016–2017), con media 680; per i lag da 2 a 9 la media scende a 549–622. La dimensione campionaria effettiva è comunque limitata dalla struttura delle eleggibilità.
 
 ## Limitazioni
 
 - **QAP con zeri strutturali.** La permutazione cambia l'insieme delle diadi comuni oltre all'accoppiamento, il che è il nullo corretto per reti con zeri strutturali, ma rende la distribuzione nulla dipendente dalla geometria delle maschere.
 - **Effetti residui.** La residualizzazione rimuove gli effetti di livello votante e destinatario in modo lineare (due-vie centering). Interazioni non lineari o effetti di ordine superiore non sono catturati.
 - **Esclusione del WLD.** Dal 2023 metà del voto pubblico è *Rest of the World*; escludere il WLD lascia la metà nazionale. La stabilità del layer public è quindi misurata sulla parte collegata ai paesi, e le conclusioni valgono per quella parte.
-- **Allineamento sui paesi comuni.** Nel confronto temporale si allineano solo i paesi presenti in entrambi gli anni. Paesi che entrano/escono dall'insieme dei finalisti non contribuiscono alla stabilità; questo è corretto per la domanda posta ma riduce il campione ai lag maggiori.
+- **Allineamento sui paesi comuni.** Nel confronto temporale si allineano solo i paesi presenti in entrambe le edizioni. Paesi che entrano/escono dall'insieme dei finalisti non contribuiscono alla stabilità; questo è corretto per la domanda posta ma riduce il campione ai lag maggiori.
 - **Nessuna inferenza causale.** La stabilità osservata è descrittiva: non dice *perché* il pattern persiste (geografia, cultura, qualità della canzone, inerzia del voto).
 
 ## Output
@@ -119,6 +119,4 @@ python src/analyze_rq4_layer_similarity.py      # ~5 secondi
 python src/analyze_rq4_temporal_stability.py    # ~18 secondi
 ```
 
-Opzioni (entrambe): `--seed` (default 42). La prima prende `--perms` (default 1000), la seconda `--perms` (default 500) e `--max-lag` (default 9).
-
-Entrambi gli script arrotondano i CSV a 10 decimali e sono **byte-identici** su esecuzioni consecutive.
+Gli script non hanno opzioni da riga di comando: seed, numero di permutazioni e lag massimo sono costanti in cima al file (`SEED`, `N_PERM`, `MAX_LAG`). Entrambi arrotondano i CSV a 10 decimali e sono **byte-identici** su esecuzioni consecutive.

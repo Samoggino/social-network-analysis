@@ -26,7 +26,10 @@ the mean participation ratio, and the Spearman correlation between prestige and
 participation (the fourth result of RQ3). The last one is why the root README
 listed this null as missing: under uniform ballots the mechanical part of that
 correlation is only about 0.25, and with the observed popularity distribution it
-may be larger.
+may be larger. It is: with in-degree and in-strength fixed the null correlation
+is 0.75 for juries and 0.84 for the public, against 0.72 and 0.82 observed. The
+observed correlation is therefore the mechanical value, not evidence of bloc
+support, and the fourth result is read accordingly in the README.
 
 Because the null has no popularity signal, the z-scores of the observed values
 against it are also comparable across layers, which the uniform null does not
@@ -141,13 +144,22 @@ def popularity_null(
         if in_degree[j] >= MIN_VOTERS:
             kept_enough.append(len(kept) - 1)
 
-    home = np.array(home)   # finalists x replicates
+    home = np.array(home)   # finalists that received points x replicates
     part = np.array(part)
+    kept = np.array(kept, dtype=int)   # their column index in the full matrix
     enough = np.array(kept_enough, dtype=int)
 
     def correlation(selection: np.ndarray) -> np.ndarray:
+        """Spearman between prestige and participation ratio.
+
+        `selection` indexes the rows of `part`, which are the finalists that
+        received at least one point, in the order they appear in `kept`; the
+        country index in the full matrix is therefore kept[selection]. Using
+        `prestige[selection]` directly would read the prestige of the first
+        countries in alphabetical order instead.
+        """
         return np.array([
-            spearman(prestige[selection], part[selection, b]) for b in range(n_null)
+            spearman(prestige[kept[selection]], part[selection, b]) for b in range(n_null)
         ])
 
     return {
@@ -157,6 +169,7 @@ def popularity_null(
         "home_excess_min5": home[enough].mean(axis=0),
         "participation_ratio_min5": part[enough].mean(axis=0),
         "spearman_prestige_participation_min5": correlation(enough),
+        "kept": kept,
     }
 
 
@@ -233,11 +246,14 @@ def main() -> None:
                 bridge = bridging(W, eligible, G, finalists)
                 null = popularity_null(W, eligible, G, finalists, prestige, args.null_samples, rng)
 
+                # Observed values are computed on the same finalists as the
+                # null, i.e. those that received at least one point.
+                kept = null["kept"]
                 observed = {
-                    "home_excess": float(np.nanmean(bridge["home_excess"][finalists])),
-                    "participation_ratio": float(np.nanmean(bridge["participation_ratio"][finalists])),
+                    "home_excess": float(np.nanmean(bridge["home_excess"][kept])),
+                    "participation_ratio": float(np.nanmean(bridge["participation_ratio"][kept])),
                     "spearman_prestige_participation": spearman(
-                        prestige[finalists], bridge["participation_ratio"][finalists]
+                        prestige[kept], bridge["participation_ratio"][kept]
                     ),
                 }
                 keys = list(STATISTICS)
@@ -247,12 +263,12 @@ def main() -> None:
                 for statistic in keys:
                     if statistic.endswith("_min5"):
                         base = statistic[:-5]
-                        enough = (W > 0).sum(axis=0)[finalists] >= MIN_VOTERS
+                        enough = (W > 0).sum(axis=0)[kept] >= MIN_VOTERS
                         if base == "spearman_prestige_participation":
-                            value = spearman(prestige[finalists][enough],
-                                             bridge["participation_ratio"][finalists][enough])
+                            value = spearman(prestige[kept][enough],
+                                             bridge["participation_ratio"][kept][enough])
                         else:
-                            value = float(np.nanmean(bridge[base][finalists][enough]))
+                            value = float(np.nanmean(bridge[base][kept][enough]))
                     else:
                         value = observed[statistic]
 

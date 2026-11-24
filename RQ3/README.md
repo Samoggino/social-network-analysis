@@ -34,7 +34,7 @@
 
 - The home excess is 0 under this model.
 - The participation ratio is about 0.93 rather than 1, because ten ballots of points are a finite sample.
-- The prestige–participation correlation is about 0.25, not 0: under uniform ballots the in-degree varies by chance, and a finalist drawn with more voters also draws them from more groups. Section 8 shows that this is an artefact of the uniform null, not a property of popularity.
+- The prestige–participation correlation is about 0.25, not 0: under uniform ballots the in-degree varies by chance, and a finalist drawn with more voters also draws them from more groups. It is a counting effect: with n voters the participation ratio is on average (1 − 1/n) times the eligible value. Section 8 shows that with the observed popularity distribution the same effect puts the mechanical value at about 0.75 / 0.84, which is the observed correlation, so the positive correlation is mechanical rather than evidence of bloc support.
 
 Observed values are always compared with the null, not with 0 or 1.
 
@@ -66,6 +66,8 @@ Means over the ten editions:
 | Home excess, subregion, ≥ 5 voters | 0.078 | 0.158 | 0 | 8/10 | 0.008 | 0.023 |
 | Spearman prestige–participation, subregion, ≥ 5 voters | 0.635 | 0.772 | 0.25 | 9/10 | 0.014 | 0.027 |
 
+The last two rows compare with *uniform* ballots only; section 8 shows that with the observed popularity held fixed the mechanical value of the prestige–participation correlation is 0.75 / 0.84, so those rows are not evidence of bloc support.
+
 1. **Prestige is far more concentrated than random voting**, in every network. Televoting is more concentrated than juries in every edition: the public converges on fewer winners.
 
 2. **Juries and public reward different countries.** The Spearman correlation between jury and public in-strength within the same final is only 0.40 on average (minimum 0.21).
@@ -76,10 +78,9 @@ Means over the ten editions:
 3. **Public support depends more on the country's own group**, whichever grouping is used. Against the null, the home excess on subregions is significant in all 10 public networks and in 8/10 jury networks. The participation ratio is lower for the public on all three groupings.
    - The same holds for the RQ2 communities. The community home excess is larger than the regional one, but that is expected, because the communities are built from the same votes (see the limitations). The useful result is the jury/public comparison, which agrees with the fixed groups.
 
-4. **The most voted finalists draw support from across Europe.** The correlation between prestige and participation is positive in every network: 0.72 for juries and 0.82 for the public, against 0.25 under random ballots. It is above the null's 97.5% quantile in 9/10 jury and 10/10 public networks. The result holds with blocks (0.88 / 0.87) and with RQ2 communities (0.62 / 0.74).
-   - Bloc support is therefore typical of mid- and low-ranking countries, while top countries receive points from every group (`figures/rq3/rq3_prestige_vs_participation.png`).
-   - The relation is stronger for the public (8/10 editions, Holm 0.041). In televoting, a country that is not a favourite gets its points mainly from its neighbours.
-   - It is not driven by countries with one or two voters. Excluding finalists voted by fewer than 5 countries, the correlation drops only slightly (0.64 / 0.77) and stays above the null's 97.5% quantile in 9/10 networks for each layer. The public home excess also stays more than twice the jury's (0.16 vs 0.08).
+4. **The prestige–participation correlation is positive but mechanical.** The correlation between prestige and participation is 0.72 for juries and 0.82 for the public, against 0.25 under random ballots. It is above the uniform null's 97.5% quantile in 9/10 jury and 10/10 public networks. However, section 8 shows that a null which keeps each finalist's popularity fixed reproduces almost exactly the same correlation (0.75 / 0.84), so the positive association is a counting effect, not evidence that the top countries draw support from across Europe while the others are confined to their bloc. It should not be interpreted as bloc support, and it has no layer difference once popularity is fixed.
+   - The mechanical origin is the definition: for a finalist with n voters the participation ratio is on average (1 − 1/n) times the value computed on the eligible voters, so a finalist with more voters automatically looks more spread out. Prestige counts points, and points and voters grow together (`figures/rq3/rq3_prestige_vs_participation.png`).
+   - Excluding finalists voted by fewer than 5 countries does not remove the correlation (0.64 / 0.77), and those values are again at the mechanical level of the same null (0.66 / 0.72). The public home excess, which is the result that survives, stays more than twice the jury's (0.16 vs 0.08).
 
 5. **Countries "between communities" are not bridges in the voting sense.** The firmness of a country's RQ2 membership is not correlated with the spread of its incoming points (mean Spearman +0.06 for juries, −0.05 for the public, with mixed signs).
    - A country that the Louvain runs move between communities is not one that draws points from several groups.
@@ -87,7 +88,7 @@ Means over the ten editions:
 
 6. **Prestige measures agree.** PageRank and HITS authority rank finalists almost like in-strength (Spearman 0.94 and 0.99). On these dense, complete-ballot networks, the recursive measures add little beyond the points received. Betweenness survives a little more: its correlation with in-strength is 0.78, so it re-ranks the middle of the table without changing the picture, and it is not used further. The hub score of voters is moderately related to the mean strength of the countries they chose (0.69), which means it measures a taste for consensus finalists and not simply the size of the countries voted for; with ten choices out of roughly twenty-five finalists the question does not require it, and it stays in `rq3_country_year.csv` as a diagnostic.
 
-7. **The home excess and the prestige–participation correlation survive a popularity-preserving null.** The uniform null of the section above assumes that no finalist is popular, so part of the observed bridging could be explained by who collects points rather than by where the points come from. Holding in-degree and in-strength fixed per finalist:
+7. **The home excess survives a popularity-preserving null.** The uniform null of the section above assumes that no finalist is popular, so part of the observed bridging could be explained by who collects points rather than by where the points come from. Holding in-degree and in-strength fixed per finalist:
 
 | Mean over the editions, subregion | Jury | Public |
 |---|---:|---:|
@@ -102,17 +103,17 @@ Means over the ten editions:
 
    The home excess is therefore not a popularity effect: it is support that comes from a finalist's own group more often than the same finalists' popularity would explain. On the fixed cultural block the pattern is stronger (0.076 and 0.152, 9/10 and 10/10 networks). The participation ratio is the measure that suffers most from fixing popularity, as expected, since it is built on the same counts: the jury evidence becomes weak (5/10) while the public evidence remains clear (8/10).
 
-8. **The prestige–participation correlation is not mechanical.** Under the popularity-preserving null the correlation between points per opportunity and participation ratio is **0.006 for juries and −0.05 for the public**, not the 0.25 that uniform ballots produce:
+8. **The prestige–participation correlation is mechanical.** Under the popularity-preserving null the correlation between points per opportunity and participation ratio is **0.753 for juries and 0.836 for the public**, against 0.717 and 0.815 observed:
 
 | | Jury | Public |
 |---|---:|---:|
 | Observed | 0.717 | 0.815 |
 | Under uniform ballots | ≈ 0.25 | ≈ 0.25 |
-| Under the popularity-preserving null | 0.006 | −0.05 |
-| z-score against the second null | 5.81 | 8.62 |
-| Networks with p < 0.05 | 9/10 | 10/10 |
+| Under the popularity-preserving null | 0.753 | 0.836 |
+| z-score against the second null | −0.27 | −0.41 |
+| Networks with p < 0.05 | 1/10 | 1/10 |
 
-   The 0.25 of the uniform null is an artefact of drawing ballots at random, where in-degree varies by chance; once the observed in-degrees are fixed, a random assignment of voters produces no correlation at all. The positive correlation is therefore bloc support: the countries that are not favourites get their points from fewer groups, and that is a real feature of the votes, not a sample-size effect. The result also holds on the cultural block (0.875 / 0.874) and, more weakly, on the RQ2 communities (0.622 / 0.736).
+   The observed correlation is therefore at, in fact marginally below, the value that a world with the same popularity distribution and randomly assigned voters produces. The mechanism is arithmetic: the participation ratio of a finalist with n voters has expectation (1 − 1/n) times the value on the eligible voters, so it rises with the number of voters whether or not the voters are geographically concentrated, and prestige rises with the number of voters because it counts points. The correlation measures how many countries voted for a finalist, not where those countries are. The 0.25 of the uniform null was the same effect under a different popularity distribution; with the observed distribution the mechanical value is 0.75 / 0.84. The cultural block (0.875 / 0.874 observed, 0.873 / 0.913 under the null) and the RQ2 communities (0.622 / 0.736 observed, 0.660 / 0.729 under the null) behave in the same way, and the ≥ 5 voters filter does not change the picture (0.635 / 0.772 observed, 0.663 / 0.715 under the null). Result 4 must therefore be read in this corrected form: the positive correlation is not a finding about bloc support.
 
 9. **Tevoting is more homophilic than juries even after controlling for popularity.** The paired comparison on the z-scores of the second null, with the community rows kept for completeness although they are circular:
 
@@ -121,12 +122,12 @@ Means over the ten editions:
 | Home excess, subregion | +3.02 | 0.0039 | 0.039 |
 | Home excess, block | +2.57 | 0.0020 | 0.023 |
 | Participation ratio, subregion | −2.52 | 0.0156 | 0.094 |
-| Prestige–participation, subregion | +2.81 | 0.0176 | 0.094 |
+| Prestige–participation, subregion | −0.14 | 0.81 | 1.00 |
 | Home excess, subregion, ≥ 5 voters | +3.06 | 0.0059 | 0.047 |
 | Participation ratio, subregion, ≥ 5 voters | −3.71 | 0.0020 | 0.023 |
 | Home excess, RQ2 community | +0.88 | 0.168 | 0.336 |
 
-   The layer difference in home excess is confirmed under both nulls. The participation ratio and the prestige–participation correlation keep the same sign but do not survive Holm over the twelve comparisons, and the community rows lose significance entirely — which is what the circularity warning predicts, and a further reason to compare layers on the fixed groups.
+   The layer difference in home excess is confirmed under both nulls. The participation ratio keeps the same sign but does not survive Holm without the ≥ 5 voters filter, and the prestige–participation rows are indistinguishable between the layers once popularity is fixed, which is consistent with that correlation being mechanical. The community rows lose significance entirely — which is what the circularity warning predicts, and a further reason to compare layers on the fixed groups.
 
 10. **Entropy says the same thing as the Gini.** Normalised entropy of the points received is 0.900 for juries and 0.860 for the public, against 0.990 under uniform ballots (10/10 networks significant in both layers). It is a monotone function of the Herfindahl index already reported, so it is conceptually redundant and is included only because the official specification names it.
 
@@ -150,7 +151,7 @@ Means over the ten editions:
 - **The popularity-preserving null is not a full network rewiring.** It fixes the opportunity structure of each *recipient* and redraws the identity of its voters, which is what the bridging measures need. It does not preserve the degrees of the voters, so it is not the RQ1 edge-swap model and the two are not interchangeable.
 - **The WLD is excluded.** From 2023 the real public score is half Rest of the World and half national televote; excluding the WLD leaves the national half. Public concentration and home excess are therefore measured on the part of the public vote that is attached to countries, and the public layer is the one where this matters.
 - **Circularity of the communities.** The RQ2 communities come from the same votes, so the community home excess and participation ratio are inflated by construction, and their null test is not an independent test. They are used for the jury/public comparison and to check the results obtained with fixed groups.
-- **Country-level noise.** A country that gets few points has noisy bridging measures. A finalist whose points all come from one group, often a single voter, gets participation 0 (the points at the bottom of the prestige–participation figure). This is the mechanical part of the prestige–participation relation that the null model measures (about 0.25); the ≥ 5 voters sensitivity check shows that the results do not depend on these cases. Country-level values in `rq3_country_aggregate.csv` should be read together with `finals` and the points received.
+- **Country-level noise, and the mechanical prestige–participation relation.** A country that gets few points has noisy bridging measures. A finalist whose points all come from one group, often a single voter, gets participation 0 (the points at the bottom of the prestige–participation figure). This is exactly the mechanical part of the prestige–participation relation that the popularity-preserving null measures (0.75 / 0.84, section 8), and the ≥ 5 voters check does not remove it. Country-level values in `rq3_country_aggregate.csv` should be read together with `finals` and the points received.
 - **Overlap with RQ2.** The home excess overlaps with the same-region share of RQ2, seen from the side of the recipient instead of the voter. The report should present it as the recipient-side view, not as a separate result.
 
 ## Outputs
@@ -178,7 +179,7 @@ Requirements: Python with `numpy`, `networkx`, `matplotlib` (no scipy needed).
 ```bash
 cd RQ3
 python src/analyze_rq3.py                     # about one minute
-python src/analyze_rq3_popularity_null.py     # about twenty seconds
+python src/analyze_rq3_popularity_null.py     # about half a minute
 python src/analyze_rq3_ranking.py             # a few seconds
 python src/analyze_rq3.py --simulations 5000  # more null samples
 ```
