@@ -388,29 +388,40 @@ social-network-analysis/
 │   └── figures/
 │       └── rq2/
 │
-└── RQ3/
+├── RQ3/
+│   ├── README.md
+│   ├── src/
+│   │   ├── analyze_rq3.py
+│   │   ├── analyze_rq3_popularity_null.py
+│   │   └── analyze_rq3_ranking.py
+│   ├── results/
+│   │   └── rq3/
+│   └── figures/
+│       └── rq3/
+│
+├── RQ4/
+│   ├── README.md
+│   ├── src/
+│   │   ├── analyze_rq4_layer_similarity.py
+│   │   ├── analyze_rq4_temporal_stability.py
+│   │   └── rq4_common.py
+│   ├── results/
+│   │   └── rq4/
+│   └── figures/
+│       └── rq4/
+│
+└── RQ5/
     ├── README.md
     ├── src/
-    │   ├── analyze_rq3.py
-    │   ├── analyze_rq3_popularity_null.py
-    │   └── analyze_rq3_ranking.py
+    │   ├── analyze_rq5_prediction.py
+    │   └── rq5_common.py
     ├── results/
-    │   └── rq3/
+    │   └── rq5/
     └── figures/
-        └── rq3/
-└── RQ4/
-    ├── README.md
-    ├── src/
-    │   ├── analyze_rq4_layer_similarity.py
-    │   ├── analyze_rq4_temporal_stability.py
-    │   └── rq4_common.py
-    ├── results/
-    │   └── rq4/
-    └── figures/
-        └── rq4/
+        └── rq5/
 ```
 
-The `RQ1`, `RQ2`, `RQ3` and `RQ4` directories each contain the analysis scripts, the prepared voting matrices, the numerical results and the visualizations for the corresponding research question. The `docs` directory collects the project documents. `scripts/` builds the vote networks for Gephi (see *Grafi e Gephi* below); its output in `output/` is regenerated and not versioned, except the Gephi project. Other research questions and project components can be added to the repository as development continues.
+The `RQ1`, `RQ2`, `RQ3`, `RQ4` and `RQ5` directories each contain the analysis scripts, the prepared voting matrices, the numerical results and the visualizations for the corresponding research question. The `docs` directory collects the project documents. `scripts/` builds the vote networks for Gephi (see *Grafi e Gephi* below); its output in `output/` is regenerated and not versioned, except the Gephi project. Other research questions and project components can be added to the repository as development continues.
 
 ---
 
@@ -538,6 +549,21 @@ python src/analyze_rq4_temporal_stability.py    # ~18 seconds
 The first script compares jury vs public on the same dyads within each edition; the second compares the same layer across editions. Both use QAP permutation tests (1000 and 500 replicates respectively) and the exact paired sign-flip test for the lag-1 layer comparison.
 
 Method, results and limitations are in `RQ4/README.md`.
+
+---
+
+## Reproducing RQ5
+
+RQ5 (walk-forward prediction of the top-3 recipients) reads the matrices in `RQ1/processed_data/matrices/` and the attribute table in `RQ2/processed_data/tables/`. It runs in about three seconds:
+
+```bash
+cd RQ5
+python src/analyze_rq5_prediction.py
+```
+
+The script fits the four nested models (popularity, historical tie, geography and language, SNA communities) on the editions before each test year, ranks the eligible recipients of 2023, 2024, 2025 and 2026, and writes Hit@3, NDCG@3 and MRR per edition and layer. Every feature, partition and scaling is rebuilt inside each fold from the training editions only. The random seeds (ten Louvain seeds and the bootstrap seed 42) are explicit, and two consecutive runs produce byte-identical outputs.
+
+Method, results and limitations are in `RQ5/README.md`.
 
 ---
 
@@ -701,7 +727,11 @@ In alternativa: `File > Import Spreadsheet`, prima `*_nodes.csv` poi
   - [ ] **TODO — agree the formulation of RQ4 in the group.** The current one (similarity + stability, see `RQ4/README.md`) has not been approved by the group yet.
   - [ ] **TODO — write the RQ4 section of the report**, linking it to RQ1 (temporal persistence there is binary/edge-based, here it is whole-matrix weighted with confounds removed) and to RQ3 (layer similarity is the bridge between prestige and bridging), so that results are not repeated.
   - [ ] **TODO — decide whether `RQ4/results/` and `RQ4/figures/` are versioned.** They are regenerated in about 25 seconds.
-- **RQ5 (optional, predictive):** Defined in the group proposal (`Progetto_Eurovision_SNA_Proposta_Completa_RQ5.pdf`), not yet started.
+- **RQ5 (optional, predictive):** Walk-forward prediction of the top-3 recipients (12, 10 and 8 points) completed, following the group proposal. Four folds with test editions 2023, 2024, 2025 and 2026, four nested logistic models (M0a popularity, M0b historical tie, M1 geography and language, M2 SNA communities), everything rebuilt from the training editions only, evaluated with Hit@3, NDCG@3 and MRR per edition and layer plus a stratified bootstrap over voters. Key results: every model beats the constrained random baseline (Hit@3 0.22 vs 0.12 for juries, 0.39 vs 0.12 for the public); the direct historical tie is the decisive feature for the public (+0.183, 4/4 editions, 95% CI [0.144, 0.224]) and adds nothing for juries; geography and language add nothing beyond the tie (−0.002 both layers, CI around zero); the RQ2 communities add nothing (M2−M1 +0.002 jury and +0.005 public, CI includes zero). The communities are a real description of the networks but not a source of out-of-sample predictive gain, and no group bonus is forced. Open items:
+  - [ ] **TODO — agree the formulation of RQ5 in the group.** The current one (walk-forward top-3, see `RQ5/README.md`) has not been approved by the group yet.
+  - [ ] **TODO — write the RQ5 section of the report**, linking it to RQ2 (the communities are real but redundant with geography, language and the dyadic history) and to RQ4 (the dyadic persistence translates into prediction, especially for the public), so that results are not repeated.
+  - [ ] **TODO — decide whether `RQ5/results/` and `RQ5/figures/` are versioned.** They are regenerated in about three seconds.
+  - [ ] **TODO — optional inner temporal validation** to choose the L2 penalty and the smoothing constant; currently both are fixed ex ante, as the proposal allows.
 
 ## Data Source
 
