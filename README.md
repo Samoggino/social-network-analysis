@@ -242,9 +242,9 @@ Language families are spatially clustered, so a linguistic effect may be geograp
 - Televoting assigns a larger share of choices and points to countries in the same UN subregion. The mean differences are about +3.16 and +6.20 percentage points. The leave-one-edition-out results keep both differences positive.
 - The consensus partition agrees more closely with geographic subregions for televoting. The partitions and their stability are reported across the Louvain runs and scopes.
 - With 2,000 samples per network and scope, 5 of 40 tests using random ballots and 1 of 40 tests using shuffled weights have Holm-adjusted upper-tail p-values below 0.05. The adjustment is computed separately for each model from the nominal CSV p-values.
-- The revised country attributes assign official language families to Finland, Ireland, Cyprus and Malta. The cross-subregion language analysis estimates choices and points against separate opportunity benchmarks. The paired comparison provides no evidence of a difference between layers after Holm.
+- The country attributes assign official language families to Finland, Ireland, Cyprus and Malta. The cross-subregion language analysis estimates choices and points against separate opportunity benchmarks. The paired comparison provides no evidence of a difference between layers after Holm.
 
-The [RQ2 README](RQ2/README.md) and [report](RQ2/Spiegazione_analisi_e_risultati.pdf) describe the results and validation.
+The [RQ2 README](RQ2/README.md) describes the results and validation.
 
 ---
 
@@ -259,7 +259,7 @@ Several limitations should be considered when interpreting the results:
 - Some hypotheses and metrics were selected after preliminary exploration of the data.
 - Multiple-testing corrections do not completely eliminate post-selection concerns.
 - Persistent voting patterns cannot automatically be attributed to geographical, linguistic, cultural, or political factors.
-- The region and language variables describe countries, not songs, and the language coding is the most fragile construct in the analysis; an alternative coding is documented in `RQ2/README.md`.
+- The region and language variables describe countries, not songs, and the language coding is the most fragile construct in the analysis; the coding choices are documented in `RQ2/README.md`.
 - Louvain is stochastic: community counts and modularity are reported together with a stability analysis, not as point estimates.
 - The two RQ2 modularity nulls preserve different properties. One permutes weights on the fixed projection, and one preserves ballot eligibility and the individual score set.
 - The RQ2 permutation tests shuffle labels across countries and therefore ignore spatial autocorrelation between neighbouring countries.
@@ -355,7 +355,7 @@ social-network-analysis/
         └── rq5/
 ```
 
-Each `RQ` directory contains its source and results. RQ1 and RQ2 contain voting matrices. RQ3 reads its matrices and labels from RQ2. RQ4 and RQ5 read the RQ1 matrices, and RQ5 reads the RQ2 country attributes. The `docs` directory collects the project documents. `scripts/` builds the vote networks for Gephi (see *Grafi e Gephi* below); its output in `output/` is regenerated and not versioned, except the Gephi project. Other research questions and project components can be added to the repository as development continues.
+Each `RQ` directory contains its source and results. RQ1 and RQ2 contain voting matrices. RQ3 reads its matrices and labels from RQ2. RQ4 and RQ5 read the RQ1 matrices, and RQ5 reads the RQ2 country attributes. The `docs/Teoria` directory collects the course theory notes. `scripts/` builds the vote networks for Gephi (see *Grafi e Gephi* below); its output in `output/` is regenerated and not versioned, except the Gephi project.
 
 ---
 
@@ -452,7 +452,7 @@ python src/analyze_rq3_popularity_null.py
 python src/analyze_rq3_ranking.py
 ```
 
-The ranking script uses the aggregate from the first script. The [RQ3 README](RQ3/README.md) and [report](RQ3/Spiegazione_analisi_e_risultati.pdf) document the parameters, results and tests.
+The ranking script uses the aggregate from the first script. The [RQ3 README](RQ3/README.md) documents the parameters, results and tests.
 
 ---
 
@@ -669,24 +669,13 @@ In alternativa: `File > Import Spreadsheet`, prima `*_nodes.csv` poi
 
 ## Project Status
 
-- **RQ1:** Annual structural analysis, popularity-controlled null models, temporal persistence analysis, and temporal null model completed.
-- **RQ2:** Community structure, opportunity-corrected homophily, extensive and intensive margins, partition agreement, consensus partition, modularity null model and cross-region language test completed.
-- **RQ3:** Prestige, concentration and the origin of support. The observed geographic prestige–participation correlation (0.717 jury, 0.815 public) is compatible with the fixed-popularity reference (0.753 and 0.836). Public geographic home excess is higher in the paired comparison of standardised deviations (Holm p = 0.0391).
-  - [x] **Popularity-preserving null model.** The recipient's voter count and score multiset are held fixed. The corrected indexing uses the same retained finalists in the observed and simulated correlations.
-  - [ ] **TODO — agree the formulation of RQ3 in the group.** The current one (prestige + bridging, see `RQ3/README.md`) has not been approved by the group yet.
-  - [ ] **TODO — write the RQ3 section of the report**, linking it to RQ1 (popularity there is a confounder to control, here it is the object of study) and to RQ2 (the home excess is the RQ2 homophily seen from the recipient's side), so that results are not repeated.
-  - [ ] **TODO — decide whether `RQ3/results/` and `RQ3/figures/` are versioned.** They are regenerated in about a minute and a half.
-- **RQ4.** The mean within-edition fixed-effect residual Pearson correlation is 0.2413 (Holm p = 0.0020 in each of the ten editions). Across consecutive editions it is 0.1178 for juries and 0.4717 for televote, a gap of +0.3539 with televote higher in all nine pairs. Both layer means and the gap exceed the reference with exchangeable country labels across editions (Holm p = 0.0006 for each). The gap test concerns that reference. Equal stability between two processes that may both be persistent is a separate question.
-  - The gap is +0.3464 on the 130 always-eligible dyads and ranges from +0.3182 to +0.3743 when omitting one edition at a time. The [RQ4 README](RQ4/README.md) reports the descriptive sensitivity of the other metrics.
-  - [ ] **TODO — agree the formulation of RQ4 in the group.** The current formulation covers layer similarity and temporal stability.
-  - [ ] **TODO — write the RQ4 section of the report.** Relate matrix-level similarity to the persistence of reciprocal and triadic configurations in RQ1.
-  - [ ] **TODO — confirm which outputs in `RQ4/results/` and `RQ4/figures/` should remain versioned.**
-- **RQ5 (optional, predictive).** In the four test editions, adding vote history to recipient popularity improved mean televote Hit@3 from 0.2103 to 0.4273 (+0.2171, higher in all four editions). The simple History baseline reached 0.4160. For juries, History and M0b both reached 0.2461.
-  - Adding geography and language together changed mean Hit@3 by +0.0093 for juries and +0.0024 for televote. Adding the main community features changed it by -0.0113 and +0.0025, respectively. Using Louvain consensus instead of the main partition changed M2 by +0.0023 and -0.0068. These differences describe the four observed editions. Their predictive value in future editions remains open.
-  - [ ] **TODO — agree the formulation of RQ5 in the group.** The current formulation covers walk-forward prediction of the three highest-point recipients.
-  - [ ] **TODO — write the RQ5 section of the report.** Relate the prediction results to the community analysis in RQ2 and the temporal stability analysis in RQ4.
-  - [ ] **TODO — confirm which outputs in `RQ5/results/` and `RQ5/figures/` should remain versioned.**
-  - [ ] **TODO — optional inner temporal validation** to choose the L2 penalty and smoothing constant. Both are currently fixed in advance.
+All five research questions are analysed and written up in the report (`RELAZIONE.TEX`, `RELAZIONE.pdf`); their results and figures are versioned in each `RQ*/` folder.
+
+- **RQ1:** annual structural analysis, popularity-controlled null models, temporal persistence and temporal null model.
+- **RQ2:** community structure, opportunity-corrected homophily, extensive and intensive margins, partition agreement, consensus partition, two modularity null models and the cross-region language test.
+- **RQ3:** prestige, concentration and the origin of support, against uniform-ballot and popularity-preserving null models. The geographic prestige–participation correlation (0.717 jury, 0.815 public) is compatible with the fixed-popularity reference (0.753 and 0.836); public geographic home excess is higher in the paired comparison of standardised deviations (Holm p = 0.0391).
+- **RQ4:** the mean within-edition fixed-effect residual Pearson correlation is 0.2413 (Holm p = 0.0020 in each edition). Across consecutive editions it is 0.1178 for juries and 0.4717 for televote, a gap of +0.3539 with televote higher in all nine pairs (Holm p = 0.0006 against exchangeable country labels). The [RQ4 README](RQ4/README.md) reports the sensitivity analyses.
+- **RQ5 (predictive):** in the four test editions, adding vote history to recipient popularity raises mean televote Hit@3 from 0.2103 to 0.4273; geography, language and communities add at most about ±0.01. The L2 penalty and the smoothing constant are fixed in advance, without an inner temporal validation.
 
 ## Data Source
 

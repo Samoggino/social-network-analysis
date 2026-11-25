@@ -58,7 +58,7 @@ python -B -m unittest discover -s tests -v
 python -B run_all.py
 ```
 
-Per una copia separata, aggiungere `--matrices "percorso/alle/matrici"`. L'opzione `--output-dir` cambia la radice degli output. I default sono 9.999 permutazioni e semi 42 per l'analisi annuale e 43 per quella temporale. In `run_all.py`, `--seed` imposta il primo seme e il secondo è quello successivo. Gli script originari restano eseguibili anche singolarmente e accettano gli stessi parametri, con il rispettivo seme predefinito. Usare `run_all.py` per generare anche il registro completo.
+Per usare matrici in un'altra posizione, aggiungere `--matrices "percorso/alle/matrici"`. L'opzione `--output-dir` cambia la radice degli output. I default sono 9.999 permutazioni e semi 42 per l'analisi annuale e 43 per quella temporale. In `run_all.py`, `--seed` imposta il primo seme e il secondo è quello successivo. Gli script originari restano eseguibili anche singolarmente e accettano gli stessi parametri, con il rispettivo seme predefinito. Usare `run_all.py` per generare anche il registro completo.
 
 | File in `results/rq4/` | Contenuto |
 |---|---|

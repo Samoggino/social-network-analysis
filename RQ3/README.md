@@ -9,7 +9,7 @@
 - Groups:
   - `region` (UN M49 subregion) and `eurovision_block` (cultural block), from `../RQ2/processed_data/tables/country_attributes_rq2.csv`. The language coding is not used.
   - `community`: the RQ2 consensus partition of each full network, from `../RQ2/results/rq2/rq2_consensus_labels.csv`. It combines 200 Louvain runs by average linkage, so it does not depend on a single seed. The file also gives each country's *firmness*: its mean co-assignment with the other members of its community across the runs.
-The three scripts use the revised RQ2 as their input. The consensus reader also accepts the older column names for explicit input overrides.
+The three scripts use these RQ2 files as their input.
 
 ## Measures
 
@@ -50,7 +50,7 @@ Both comparisons use a **two-sided exact paired sign-flip test**. The test takes
 
 ## Results
 
-**Revision note.** Both revisions corrected the indexing of retained finalists. The integrated code uses the same retained countries for observed and simulated statistics, computes ranks across replicates, and normalises entropy over all eligible finalists.
+The scripts use the same retained finalists for observed and simulated statistics, compute ranks across replicates, and normalise entropy over all eligible finalists.
 
 The table reports means over the ten editions. The random-ballot column gives the uniform null mean averaged across editions and layers. The p-value columns refer to the paired test on the observed statistics.
 
@@ -78,7 +78,7 @@ The table reports means over the ten editions. The random-ballot column gives th
 
 3. **The televote has higher geographic home excess.** It is higher in nine of ten editions, with a mean gap of 0.110 (11.0 percentage points). Against the uniform-ballot null, the nominal two-sided p-value for regional home excess is below 0.05 in 8/10 jury networks and 10/10 televote networks. The observed mean participation ratio is lower in televoting for all three groupings. The results for RQ2 communities are descriptive because the groups were estimated from the same votes.
 
-4. **Prestige and geographic participation are positively correlated in the observed data.** The Spearman coefficient is positive in every network. The televote coefficient is higher in 8 of ten editions, with a Holm-adjusted p-value of 0.041 in the paired test on observed coefficients. The scatterplot shows this descriptive pattern (`figures/rq3/rq3_prestige_vs_participation.png`). Mean correlations are also positive for cultural blocks (0.85 jury, 0.85 televote) and RQ2 communities (0.62 jury, 0.74 televote). Section 8 evaluates the geographic correlation against the corrected popularity-preserving reference.
+4. **Prestige and geographic participation are positively correlated in the observed data.** The Spearman coefficient is positive in every network. The televote coefficient is higher in 8 of ten editions, with a Holm-adjusted p-value of 0.041 in the paired test on observed coefficients. The scatterplot shows this descriptive pattern (`figures/rq3/rq3_prestige_vs_participation.png`). Mean correlations are also positive for cultural blocks (0.85 jury, 0.85 televote) and RQ2 communities (0.62 jury, 0.74 televote). Section 8 evaluates the geographic correlation against the popularity-preserving reference.
 
 5. **Community firmness and participation show little association on average.** Mean Spearman correlations are +0.07 for juries and −0.05 for the televote, with mixed signs across editions. Among countries with at least three finals, the memberships with the lowest mean firmness include HU, MD, LV, SI and CZ for juries, and MT, ES, AT and CZ for the televote.
 
@@ -98,18 +98,18 @@ The table reports means over the ten editions. The random-ballot column gives th
 | z-score | −1.69 | −4.20 |
 | Participation ratio, nominal lower-tail p < 0.05 | 5/10 | 8/10 |
 
-The positive mean home excess in both layers exceeds the mean under this conditional reference. For the revised cultural blocks, observed home excess is 0.085 for juries and 0.184 for the televote, with nominal upper-tail p-values below 0.05 in 9/10 and 10/10 networks, respectively. These are comparisons with a model of who could have supplied the observed points.
+The positive mean home excess in both layers exceeds the mean under this conditional reference. For the cultural blocks, observed home excess is 0.085 for juries and 0.184 for the televote, with nominal upper-tail p-values below 0.05 in 9/10 and 10/10 networks, respectively. These are comparisons with a model of who could have supplied the observed points.
 
-8. **Prestige and cross-group participation at fixed popularity.** The original script used positions in the filtered finalist list to index the full country list. That misaligned prestige and simulated participation in all 20 networks. The corrected code maps each retained finalist to its original country index, including in the analysis restricted to finalists with at least five voters.
+8. **Prestige and cross-group participation at fixed popularity.** Each retained finalist is mapped to its country index in the full network, including in the analysis restricted to finalists with at least five voters.
 
 | Ten-year mean | Jury | Public |
 |---|---:|---:|
 | Observed prestige–participation Spearman | 0.717 | 0.815 |
 | Uniform-ballot null (separate model) | approximately 0.25 | approximately 0.25 |
-| Corrected popularity-preserving null | 0.753 | 0.836 |
-| Mean z against corrected popularity null | -0.270 | -0.413 |
+| Popularity-preserving null | 0.753 | 0.836 |
+| Mean z against popularity-preserving null | -0.270 | -0.413 |
 
-The observed means are below the corrected null means in both layers. Under that null, zero of ten annual upper-tail p-values fall below 0.05 in either layer. The observed association is compatible with this reference at fixed recipient popularity. For a finalist with N eligible voters, a positive group-diversity baseline and normalised score weights w, the expected participation ratio under this model is N/(N−1) × (1−Σ w²). Both finite voter coverage and concentration of received scores contribute to that benchmark. The paired comparison of the correlation z-scores gives **two-sided p exact = 0.8125 and p Holm = 1.0**. The five-voter sensitivity test on those z-scores gives p exact = 0.1582 and p Holm = 0.6328.
+The observed means are below the null means in both layers. Under that null, zero of ten annual upper-tail p-values fall below 0.05 in either layer. The observed association is compatible with this reference at fixed recipient popularity. For a finalist with N eligible voters, a positive group-diversity baseline and normalised score weights w, the expected participation ratio under this model is N/(N−1) × (1−Σ w²). Both finite voter coverage and concentration of received scores contribute to that benchmark. The paired comparison of the correlation z-scores gives **two-sided p exact = 0.8125 and p Holm = 1.0**. The five-voter sensitivity test on those z-scores gives p exact = 0.1582 and p Holm = 0.6328.
 
 9. **Televoting shows higher home excess relative to the popularity-preserving reference.** These paired comparisons use the z-scores against that null.
 
@@ -123,7 +123,7 @@ The observed means are below the corrected null means in both layers. Under that
 | Prestige–participation, subregion | -0.143 | 0.8125 | 1.0 |
 | Prestige–participation, cultural block | -1.487 | 0.0039 | 0.0391 |
 
-The geographic and cultural home-excess comparisons have Holm-adjusted p-values below 0.05. For the revised cultural blocks, the prestige–participation correlation z-score is lower for the televote (means +0.467 for juries and −1.019 for the televote). This comparison uses each layer's own fixed-popularity reference. The subregional participation-ratio comparison meets that threshold in the five-voter subset (0.0234). The unrestricted subregional comparison has p Holm = 0.0938.
+The geographic and cultural home-excess comparisons have Holm-adjusted p-values below 0.05. For the cultural blocks, the prestige–participation correlation z-score is lower for the televote (means +0.467 for juries and −1.019 for the televote). This comparison uses each layer's own fixed-popularity reference. The subregional participation-ratio comparison meets that threshold in the five-voter subset (0.0234). The unrestricted subregional comparison has p Holm = 0.0938.
 
 10. **Entropy gives another view of concentration.** Normalised Shannon entropy averages 0.895 for juries and 0.844 for the televote, against 0.990 under uniform ballots. The nominal two-sided Monte Carlo p-value is about 0.00050 in all 20 networks. Shannon entropy and the Herfindahl index can rank distributions differently.
 
@@ -166,13 +166,9 @@ The rank correlation is 0.27 in this set and 0.31 across all finalists. With no 
 
 `figures/rq3/`: `rq3_concentration.png`, `rq3_jury_vs_public_prestige.png`, `rq3_home_bias.png`, `rq3_prestige_vs_participation.png`, `rq3_popularity_null.png`.
 
-## Explanation in Italian
-
-See the [PDF report](Spiegazione_analisi_e_risultati.pdf) and its [Markdown source](Spiegazione_analisi_e_risultati.md).
-
 ## Reproducing
 
-From the repository root, enter this copy and install its Python dependencies.
+From the repository root, enter this folder and install its Python dependencies.
 
 ```bash
 cd RQ3
@@ -182,7 +178,7 @@ python src/analyze_rq3_popularity_null.py
 python src/analyze_rq3_ranking.py
 ```
 
-The ranking script reads `rq3_country_aggregate.csv` produced by the first script. The popularity-null script reads the RQ2 inputs directly and also runs the entropy comparison. The scripts write to `results/rq3/` and `figures/rq3/` within this copy, overwriting the corresponding outputs. Run RQ2 first if its attributes or consensus have changed. Use the same inputs, options and Python dependency versions when comparing runs. The requirements file specifies minimum versions, so small numerical or rendering differences can occur across environments.
+The ranking script reads `rq3_country_aggregate.csv` produced by the first script. The popularity-null script reads the RQ2 inputs directly and also runs the entropy comparison. The scripts write to `results/rq3/` and `figures/rq3/` within this folder, overwriting the corresponding outputs. Run RQ2 first if its attributes or consensus have changed. Use the same inputs, options and Python dependency versions when comparing runs. The requirements file specifies minimum versions, so small numerical or rendering differences can occur across environments.
 
 - `analyze_rq3.py` uses `--simulations 2000` and `--seed 2026` by default.
 - `analyze_rq3_popularity_null.py` uses `--null-samples 1000` for fixed popularity, `--ballots 2000` for entropy and `--seed 2026` by default.

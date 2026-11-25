@@ -268,7 +268,7 @@ def finite_mean(values):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="RQ1 completa: analisi binarie, pesate e modelli nulli")
+    parser = argparse.ArgumentParser(description="RQ1: analisi binarie, pesate e modelli nulli")
     parser.add_argument("--simulations", type=int, default=1000,
                         help="Repliche nulle per rete, 0 = solo analisi descrittiva (default 1000)")
     parser.add_argument("--seed", type=int, default=2026)

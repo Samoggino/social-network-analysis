@@ -23,7 +23,7 @@ Per ogni Paese votante e per ciascun sistema di voto, il modello ordina i finali
 | M1 | M0b più sottoregione condivisa e almeno una famiglia linguistica comune |
 | M2 | M1 più appartenenza alla stessa comunità Louvain e coesione interna della comunità |
 
-I tassi storici sono `(conteggio + 5 × tasso globale) / (opportunità + 5)`. La media dei punti usa la media globale come riferimento analogo. La coesione è il tasso interno regolarizzato di voti forti meno il tasso globale e vale zero fra comunità diverse. M0a–M2 usano una logistica L2 con penalità 1 sulle feature standardizzate e intercetta libera. Il solver verifica la convergenza di ogni fit prima di generare gli output. L'ordinamento usa il punteggio logit, che preserva l'ordine delle probabilità.
+I tassi storici sono `(conteggio + 5 × tasso globale) / (opportunità + 5)`. La media dei punti usa la media globale come riferimento analogo. La coesione è il tasso interno regolarizzato di voti forti meno il tasso globale e vale zero fra comunità diverse. M0a–M2 usano una logistica L2 con penalità 1 sulle feature standardizzate e intercetta libera. La penalità e la costante di smoothing (5) sono fissate a priori, senza una validazione temporale interna. Il solver verifica la convergenza di ogni fit prima di generare gli output. L'ordinamento usa il punteggio logit, che preserva l'ordine delle probabilità.
 
 Per i pari merito residui si usa la priorità di un hash SHA-256 del seme, dell'edizione e dei due Paesi. La stessa priorità vale per tutti i metodi sulla stessa scheda ed è indipendente dai voti osservati. Si registra il numero di pari merito sulla soglia del terzo posto e si conserva un confronto diagnostico con l'ordine originale delle colonne.
 
@@ -55,9 +55,7 @@ Medie a pesi uguali sulle quattro finali di test.
 - **Geografia e lingua.** Insieme aggiungono **+0,0093** per le giurie e **+0,0024** per il televoto rispetto a M0b. Il confronto riguarda il blocco congiunto. Per il televoto la direzione del guadagno dipende da quale finale si omette.
 - **Comunità.** M2 rispetto a M1 cambia Hit@3 di **−0,0113** per le giurie e **+0,0025** per il televoto. Con il consenso, la differenza rispetto al M2 principale è **+0,0023** per le giurie e **−0,0068** per il televoto. Rispetto a M1, anche il consenso produce un piccolo saldo negativo in entrambi i layer. Questi risultati riguardano le quattro finali osservate. Restano aperti il contributo delle comunità in altre edizioni e quello di altre definizioni o feature.
 
-### Verifica rispetto alla versione precedente
-
-La versione precedente è stata rieseguita nello stesso ambiente con gli output intercettati in memoria e ha riprodotto i CSV entro l'arrotondamento. Tenendo fisso lo spareggio originario, la correzione del grafo storico ha fatto salire Hit@3 di M2 per le giurie 2023 da **0,2883 a 0,2973**. È l'unico cambiamento in Hit@3 tra i quattro modelli e gli otto fold. Il confronto con il consenso usa entrambi i grafi già corretti e misura quindi una scelta metodologica distinta. Lo spareggio con seme fisso non cambia Hit@3 per alcun modello. Cambia solo MRR di M0a per il televoto 2025, da **0,404272 a 0,404497**. I coefficienti di M0a, M0b e M1 coincidono con quelli precedenti entro l'arrotondamento.
+### Diagnostica
 
 I **40 fit** sono convergenti in **6–7 iterazioni**, con norma del gradiente al massimo di circa **4,94 × 10⁻¹³**. I sette test automatici passano. Due esecuzioni nell'ambiente di riferimento producono CSV, registro e PNG identici byte per byte.
 
@@ -71,7 +69,7 @@ python -B -m unittest discover -s tests -v
 python -B src/analyze_rq5_prediction.py
 ```
 
-Da una copia isolata indicare `--matrices`, `--attributes` e `--rq2-src` verso gli input della copia di integrazione. `--output-dir` consente di scegliere una diversa radice per i risultati.
+Per usare input in un'altra posizione indicare `--matrices`, `--attributes` e `--rq2-src`. `--output-dir` consente di scegliere una diversa radice per i risultati.
 
 | Output in `results/rq5/` | Contenuto |
 |---|---|

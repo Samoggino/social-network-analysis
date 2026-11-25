@@ -33,3 +33,8 @@ build/
 # Student ID numbers and the submission PDF stay local (public repository)
 matricole.tex
 RELAZIONE-consegna.pdf
+
+# Internal planning documents, kept locally only (public repository)
+docs/L_Eurovision Song Contest (ESC).docx
+docs/Piano_Guida_Progetto_Network_Analysis.docx
+docs/Eurovision_Research_Questions_SNA.pdf
