@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RQ3 (addition): a popularity-preserving null for bridging, and entropy.
+"""RQ3: a popularity-preserving null for bridging, and entropy.
 
 Run from the RQ3 directory, after analyze_rq3.py:
     python src/analyze_rq3_popularity_null.py

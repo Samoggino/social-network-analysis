@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """RQ1b: persistenza di coppie reciproche e motivi orientati negli anni.
 
-Uso: py src/rq1_temporal_persistence.py
+Uso: py src/rq1_temporal_persistence_v2.py
 Dipende da numpy, matplotlib e da analyze_rq1.py (nella stessa cartella).
 Non effettua test di significativita: i risultati sono DESCRITTIVI.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build processed_data/tables/country_attributes_rq2.csv.
 
-Reconstructed from the project conversation. Geography follows the UN M49
+Geography follows the UN M49
 subregions (https://unstats.un.org/unsd/methodology/m49/); languages are broad
 families, with more than one group for multilingual countries.
 

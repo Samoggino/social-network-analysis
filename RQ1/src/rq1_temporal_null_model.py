@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """RQ1b — test Monte Carlo della PERSISTENZA temporale, con controllo in-degree.
 
-Collocare in eurovision-sna/src/, accanto a:
-  analyze_rq1.py, rq1_popularity_control.py, rq1_temporal_persistence_v2.py
 Prima eseguire rq1_temporal_persistence_v2.py (produce i CSV descrittivi).
 
 Esempi:
@@ -185,7 +183,7 @@ def stats_of_history(networks, schedules, pair_by_layer, motif_by_layer):
 
 
 def check_observed(sums, rows):
-    # Confronto obbligatorio contro il report RQ1b corretto: evita risultati errati silenziosi.
+    # Le statistiche osservate devono coincidere con i CSV di RQ1b, altrimenti si interrompe.
     lookup = {(r['layer'],r['unit']):r for r in rows}
     for layer in LAYERS:
         for j,key in enumerate(METRICS):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run all RQ2 stages in dependency order; never touches the original repository."""
+"""Run all RQ2 stages in dependency order; never modifies the input data."""
 import subprocess
 import sys
 from pathlib import Path

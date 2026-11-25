@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RQ1 - modello nullo degree-preserving, versione revisionata.
+"""RQ1 - modello nullo degree-preserving.
 
 Riferimento metodologico: appunti Social Network Analysis, capitoli
 Research Design / Validity & Reliability, Testing Hypotheses (Permutation
@@ -18,14 +18,12 @@ Gli anni non sono un campione casuale indipendente: i test ALL_YEARS_MEAN
 sono test condizionati alle edizioni esaminate, non inferenza causale o
 predizione generale su future edizioni.
 
-Collocare in eurovision-sna/src/ accanto a analyze_rq1.py.
 Esempi:
     py src/rq1_popularity_control.py --simulations 120 --chains 4
     py src/rq1_popularity_control.py --simulations 400 --chains 4 --burnin-per-edge 15 --thin-per-edge 4
     py src/rq1_popularity_control.py --simulations 400 --chains 4 --seed 47 --burnin-per-edge 25 --thin-per-edge 6
 
-I risultati nuovi usano il prefisso rq1_popularity_robust_; non eliminano
-ne sovrascrivono le analisi della vecchia versione.
+I risultati usano il prefisso rq1_popularity_robust_.
 """
 from __future__ import annotations
 

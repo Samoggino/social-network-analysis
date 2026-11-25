@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""RQ1 COMPLETA — Eurovision: reciprocita, transivita, triadi e test Monte Carlo.
+"""RQ1 — Eurovision: reciprocita, transivita, triadi e test Monte Carlo.
 
-Da salvare come eurovision-sna/src/analyze_rq1.py
 Esecuzione: py src/analyze_rq1.py
 Per una prova rapida: py src/analyze_rq1.py --simulations 100
 Per la sola parte descrittiva: py src/analyze_rq1.py --simulations 0
@@ -183,7 +182,7 @@ def score_metrics(W: np.ndarray, triples: np.ndarray, include_exact: bool = True
     result["triads_030C"] = int(exact_c.sum())
     result["triads_030T"] = int(exact_t.sum())
 
-    # Intensita di triadi ESATTE per confronto con il vecchio script.
+    # Intensita delle sole triadi ESATTE 030T e 030C.
     if include_exact:
         triad_geo = {}
         for kind, mask in (("030T", exact_t), ("030C", exact_c)):
@@ -346,7 +345,7 @@ def main():
                 simulated[year, layer] = trials
         print(f"{year}: giurie e televoto completati" + (f" ({args.simulations} simulazioni ciascuno)" if args.simulations else ""), flush=True)
 
-    # La struttura di rq1_metrics.csv resta identica alla vecchia per confronto.
+    # Colonne di rq1_metrics.csv.
     old_fields = ["year", "layer", "nodes", "finalists", "positive_edges_full",
                   "positive_edges_finalists", "binary_reciprocity_full",
                   "binary_reciprocity_finalists", "weighted_reciprocity_full",
@@ -362,7 +361,7 @@ def main():
     write_csv(RESULTS / "rq1_all_triad_intensity.csv",
               ["year", "layer", "triad_type", "count", "mean_geometric_intensity", "sum_geometric_intensity"], exact_rows)
 
-    # Mantiene anche i due vecchi CSV delle analisi pesate per confronti immediati.
+    # CSV delle analisi pesate: reciprocita con soglia e chiusura transitiva.
     write_csv(RESULTS / "rq1_weighted_extensions.csv", [
         "year", "layer", "finalists", "binary_reciprocity_finalists", "edges_ge8",
         "reciprocated_edges_ge8", "reciprocity_ge8", "edges_ge10",

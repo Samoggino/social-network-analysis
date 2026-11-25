@@ -4,9 +4,7 @@
 Usage:
     python src/build_eurovision_data.py [path/to/dataset-main/data/senior]
 
-Reconstructed from the project conversation (the original build script was
-delivered as an attachment and is not available). The output format is the one
-expected by analyze_rq1.py / analyze_rq2.py:
+The output format is the one expected by analyze_rq1.py / analyze_rq2.py:
 
     country,<code>,<code>,...
     <code>,<points or blank>,...

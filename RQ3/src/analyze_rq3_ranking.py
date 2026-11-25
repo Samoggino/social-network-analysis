@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RQ3 (addition): a ranked table of prestige, and a check on the unused measures.
+"""RQ3: a ranked table of prestige, and a check on the unused measures.
 
 Run from the RQ3 directory, after analyze_rq3.py:
     python src/analyze_rq3_ranking.py

@@ -425,7 +425,7 @@ def plot_prestige_scatter(aggregate: list[dict]) -> None:
     x = [r["points_per_opportunity_jury"] for r in rows]
     y = [r["points_per_opportunity_public"] for r in rows]
     fig, ax = plt.subplots(figsize=(8, 7.5))
-    # Flag area proportional to the number of finals, as the former markers.
+    # Flag area proportional to the number of finals.
     flag_markers(ax, x, y, [r["country"] for r in rows],
                  diameter_pt=[np.sqrt(25 * r["finals"]) * 1.3 for r in rows],
                  ring="#5a7d9a", ring_pt=1.2, fontsize=6.5)

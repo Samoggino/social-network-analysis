@@ -178,7 +178,7 @@ def probabilities(linear: np.ndarray) -> np.ndarray:
 
 
 def fit_logistic(X: np.ndarray, y: np.ndarray):
-    """Same L2 objective as the original, with explicit convergence checks."""
+    """L2-regularised logistic regression, with explicit convergence checks."""
     if not np.isfinite(X).all() or not np.isfinite(y).all() or set(np.unique(y)) != {0, 1}:
         raise ValueError("Invalid logistic design or targets")
     matrix = np.column_stack((np.ones(len(X)), X))

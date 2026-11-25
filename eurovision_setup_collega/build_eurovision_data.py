@@ -2,7 +2,7 @@
 """Generate Eurovision voting tables and annual adjacency matrices.
 
 Run from any directory:
-    py build_eurovision_data_simple.py
+    py build_eurovision_data.py
 
 Input: EurovisionAPI/dataset JSON files, 2016–2026 (excluding 2020).
 Output: processed_data/tables/ and processed_data/matrices/.
