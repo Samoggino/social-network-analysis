@@ -20,3 +20,16 @@ eurovision-api/
 # it needs Gephi + a JDK (scripts/gephi/make_project.sh).
 output/*
 !output/gephi/
+# Report network figures (scripts/gephi/render_report.sh): only the two final
+# figures included by RELAZIONE.TEX are versioned; flags and intermediates are
+# regenerated.
+output/gephi/flags/
+output/gephi/report/*
+!output/gephi/report/fig_*.png
+
+# LaTeX build of RELAZIONE.TEX (latexmk -outdir=build)
+build/
+
+# Student ID numbers and the submission PDF stay local (public repository)
+matricole.tex
+RELAZIONE-consegna.pdf

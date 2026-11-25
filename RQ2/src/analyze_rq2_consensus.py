@@ -36,6 +36,10 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from flags import flag_markers, flag_ticks  # noqa: E402  country flags in the figures
+
 from analyze_rq2_partitions import (
     LAYERS,
     SEED,
@@ -199,6 +203,8 @@ def plot_consensus_map(
         tick.set_color(colour_of[region])
     for tick, region in zip(ax.get_yticklabels(), regions):
         tick.set_color(colour_of[region])
+    flag_ticks(ax, names, "x", height_pt=6)
+    flag_ticks(ax, names, "y", height_pt=6)
     ax.set_title(
         f"Consensus co-assignment, {year} {layer} "
         f"({len(np.unique(labels))} communities, ARI vs subregions {ari:.2f})",

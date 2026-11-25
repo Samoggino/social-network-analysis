@@ -29,6 +29,10 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from flags import flag_markers, flag_ticks  # noqa: E402  country flags in the figures
+
 YEARS = (2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025, 2026)
 LAYERS = ("jury", "public")
 SEED = 42
@@ -245,15 +249,20 @@ def plot_2016(index: dict[tuple[int, str], tuple]) -> None:
             undirected, position, ax=ax, alpha=0.07, width=0.6, edge_color="#44586b",
         )
 
-        for index_, community in enumerate(communities):
-            nx.draw_networkx_nodes(
-                undirected, position,
-                nodelist=sorted(community),
-                node_color=palette[index_ % len(palette)],
-                node_size=900, linewidths=0.8, edgecolors="white", ax=ax,
-            )
-
-        nx.draw_networkx_labels(undirected, position, font_size=7, font_color="white", ax=ax)
+        nodes = sorted(undirected)
+        community_of = {n: i for i, c in enumerate(communities) for n in c}
+        flag_markers(
+            ax, [position[n][0] for n in nodes], [position[n][1] for n in nodes], nodes,
+            diameter_pt=22, ring=[palette[community_of[n] % len(palette)] for n in nodes],
+            ring_pt=3, fontsize=7,
+        )
+        ax.legend(
+            handles=[plt.Line2D([], [], marker="o", linestyle="", markersize=9,
+                                color=palette[i % len(palette)], label=f"Community {i + 1}")
+                     for i in range(len(communities))],
+            frameon=False, fontsize=9, loc="lower center", ncol=len(communities),
+            bbox_to_anchor=(0.5, -0.06),
+        )
 
         summary = index[(2016, layer)]
         ax.set_title(

@@ -605,6 +605,38 @@ gephi output/per-year/2025_public_finalists_min8_styled.gexf
 Etichette e frecce si attivano a mano nel tab **Preview** (non sono salvabili
 nel GEXF).
 
+### Figure di rete per la relazione
+
+`scripts/gephi/render_report.sh` produce le due figure di rete della relazione
+con le librerie di Gephi (ForceAtlas2 + export Preview, senza GUI; serve un
+display X/Wayland per l'export PNG) e le bandiere come icone dei nodi:
+
+- `output/gephi/report/fig_strong_ties.png`: rete aggregata 2016–2026,
+  arco A → B se A ha dato in media ≥ 6 punti per opportunità (≥ 3 finali);
+  archi colorati se interni alla subregione ONU, grigi altrimenti
+  (giuria 74 archi, 35% intra-subregione; televoto 130, 48%);
+- `output/gephi/report/fig_reciprocal_ties.png`: coppie reciproche in almeno
+  il 75% delle finali ammissibili (RQ1: 15 giuria, 26 televoto).
+
+Richiede prima `python3 scripts/build_graph.py --aggregate --edge-weight per_opportunity`.
+Le bandiere sono scaricate una volta da flagcdn.com in `output/gephi/flags/`.
+
+### Bandiere nei grafici matplotlib
+
+`scripts/flags.py` aggiunge le bandiere dei paesi (PNG da flagcdn.com, in cache
+in `output/flags/`) ai grafici in cui compaiono paesi: rete delle comunità 2016
+(`analyze_rq2.py`), heatmap di consenso e stabilità (`analyze_rq2_consensus.py`,
+`analyze_rq2_partitions.py`), home bias per paese e prestigio giuria vs
+televoto (`analyze_rq3.py`). I grafici senza paesi (serie temporali,
+istogrammi, `rq3_prestige_vs_participation` con un punto per finalista ed
+edizione) restano invariati.
+
+### Ambiente Python
+
+Gli script vanno eseguiti nell'env locale `.venv` (mai il Python di sistema):
+`.envrc` lo crea con `uv` alla prima `direnv allow`, con le versioni di
+`RQ2/requirements.txt` più scipy per RQ3.
+
 ### Import in Gephi
 
 1. `File > Open` e selezionare il file `.gexf`.
