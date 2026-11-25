@@ -38,6 +38,10 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from flags import flag_markers, flag_ticks  # noqa: E402  country flags in the figures
+
 YEARS = (2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025, 2026)
 LAYERS = ("jury", "public")
 SEED = 42
@@ -312,6 +316,8 @@ def plot_stability(
     image = ax.imshow(matrix, cmap="Blues", vmin=0, vmax=1)
     ax.set_xticks(range(len(labels)), labels, rotation=90, fontsize=6)
     ax.set_yticks(range(len(labels)), labels, fontsize=6)
+    flag_ticks(ax, labels, "x", height_pt=5.5)
+    flag_ticks(ax, labels, "y", height_pt=5.5)
     ax.set_title(
         f"Co-assignment over {N_SEEDS} Louvain seeds - {year} {layer} "
         f"(mean pairwise ARI {ari:.2f})",

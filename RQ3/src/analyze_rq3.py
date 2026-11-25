@@ -78,6 +78,10 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from flags import flag_markers, flag_ticks  # noqa: E402  country flags in the figures
+
 YEARS = (2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025, 2026)
 LAYERS = ("jury", "public")
 BALLOT = np.array((1, 2, 3, 4, 5, 6, 7, 8, 10, 12), dtype=float)
@@ -421,9 +425,10 @@ def plot_prestige_scatter(aggregate: list[dict]) -> None:
     x = [r["points_per_opportunity_jury"] for r in rows]
     y = [r["points_per_opportunity_public"] for r in rows]
     fig, ax = plt.subplots(figsize=(8, 7.5))
-    ax.scatter(x, y, s=[25 * r["finals"] for r in rows], color="#5a7d9a", alpha=.7, edgecolor="white")
-    for r, xi, yi in zip(rows, x, y):
-        ax.annotate(r["country"], (xi, yi), fontsize=8, ha="center", va="center")
+    # Flag area proportional to the number of finals, as the former markers.
+    flag_markers(ax, x, y, [r["country"] for r in rows],
+                 diameter_pt=[np.sqrt(25 * r["finals"]) * 1.3 for r in rows],
+                 ring="#5a7d9a", ring_pt=1.2, fontsize=6.5)
     top = max(max(x), max(y)) * 1.05
     ax.plot([0, top], [0, top], "--", color="#888888", lw=1)
     ax.set_xlim(0, top)
@@ -438,7 +443,8 @@ def plot_prestige_scatter(aggregate: list[dict]) -> None:
 
 
 def plot_bridging(network_rows: list[dict], aggregate: list[dict]) -> None:
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    # Tall enough for one flag per country row on the right panel.
+    fig, axes = plt.subplots(1, 2, figsize=(14, 8))
     for layer in LAYERS:
         axes[0].plot(YEARS, [r["home_excess_region"] for r in network_rows if r["layer"] == layer],
                      "o-", color=COLORS[layer], label=LABELS[layer])
@@ -453,6 +459,7 @@ def plot_bridging(network_rows: list[dict], aggregate: list[dict]) -> None:
     axes[1].barh(pos - .2, [r["home_excess_region_jury"] for r in rows], .4, color=COLORS["jury"], label="Jury")
     axes[1].barh(pos + .2, [r["home_excess_region_public"] for r in rows], .4, color=COLORS["public"], label="Public")
     axes[1].set_yticks(pos, [r["country"] for r in rows], fontsize=7)
+    flag_ticks(axes[1], [r["country"] for r in rows], "y", height_pt=6)
     axes[1].axvline(0, color="#888888", lw=1)
     axes[1].set_title("Home bias by country (finalists at least 3 times)")
     axes[1].legend(frameon=False, fontsize=8)
