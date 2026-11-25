@@ -276,7 +276,7 @@ The reported p-values are conditional on the assumptions of the corresponding nu
 social-network-analysis/
 ├── README.md
 ├── docs/
-├── eurovision_setup_collega/
+├── data_preparation/
 ├── scripts/
 │   ├── build_graph.py
 │   ├── style_gexf.py
@@ -371,7 +371,7 @@ Install the required packages:
 python -m pip install numpy networkx matplotlib
 ```
 
-The voting matrices in `RQ1/processed_data/matrices/` are produced by `eurovision_setup_collega/build_eurovision_data.py`; `python3 scripts/build_graph.py --matrices` writes identical matrices to `output/processed_data/`.
+The voting matrices in `RQ1/processed_data/matrices/` are produced by `data_preparation/build_eurovision_data.py`; `python3 scripts/build_graph.py --matrices` writes identical matrices to `output/processed_data/`.
 
 ### Costly results
 
@@ -501,7 +501,7 @@ git clone git@github.com:EurovisionAPI/eurovision-api.git eurovision-api
 I grafi vengono costruiti da `scripts/build_graph.py`, che usa solo la
 standard library di Python 3. Lo script applica **le stesse regole della
 pipeline del gruppo** (`build_eurovision_data.py`, vedi
-`eurovision_setup_collega/`): con `--matrices` produce matrici e tabelle
+`data_preparation/`): con `--matrices` produce matrici e tabelle
 identiche byte per byte a quelle dei compagni.
 
 ### Regole sui dati (condivise con il gruppo)
