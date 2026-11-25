@@ -22,8 +22,12 @@ for fig in strong reciprocal; do
       -background white -gravity north -splice 0x140 -font $FONT -pointsize 80 -fill black \
       -annotate +0+25 "$title" "_${fig}_${layer}.png"
   done
-  magick "_${fig}_jury.png" "_${fig}_public.png" -gravity center -background white +append \
-    \( legend.png \) -gravity center -append -bordercolor white -border 20 -background white -alpha remove -alpha off "fig_${fig}_ties.png"
+  magick "_${fig}_jury.png" "_${fig}_public.png" -gravity center -background white +append +repage "_${fig}_pair.png"
+  # The legend follows the width of the panels, never the other way round.
+  width=$(magick identify -format %w "_${fig}_pair.png")
+  magick "_${fig}_pair.png" \( legend.png -resize "${width}x>" \) -gravity center -background white -append \
+    -bordercolor white -border 20 -alpha remove -alpha off +repage -depth 8 "fig_${fig}_ties.png"
+  rm "_${fig}_pair.png"
   rm "_${fig}_jury.png" "_${fig}_public.png"
   echo "$DIR/fig_${fig}_ties.png"
 done

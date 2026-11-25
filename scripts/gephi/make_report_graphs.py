@@ -90,7 +90,7 @@ def main() -> int:
         for n in node_rows:
             opp = int(n["opportunities_in"])
             ppo = float(n["in_weight"]) / opp if opp else 0.0
-            nodes[n["Id"]] = {"region": region[n["Id"]], "size": 10.0 + 7.0 * ppo}
+            nodes[n["Id"]] = {"region": region[n["Id"]], "size": 16.0 + 11.0 * ppo}
         edges = []
         for e in read_csv(agg.with_name(agg.name + "_edges.csv")):
             ppo = float(e["per_opportunity"])
@@ -111,7 +111,7 @@ def main() -> int:
         ]
         members = {p["country_a"] for p in kept} | {p["country_b"] for p in kept}
         degree = {c: sum(c in (p["country_a"], p["country_b"]) for p in kept) for c in members}
-        nodes = {c: {"region": region[c], "size": 8.0 + 1.5 * degree[c]} for c in members}
+        nodes = {c: {"region": region[c], "size": 13.0 + 2.5 * degree[c]} for c in members}
         edges = [
             (p["country_a"], p["country_b"], 1.0 + 4.0 * float(p["high_reciprocity_frequency"]),
              edge_colour(region, p["country_a"], p["country_b"]))

@@ -78,7 +78,7 @@ public class RenderReportGraphs {
             p.putValue(PreviewProperty.BACKGROUND_COLOR, Color.WHITE);
             p.putValue(PreviewProperty.SHOW_NODE_LABELS, Boolean.TRUE);
             p.putValue(PreviewProperty.NODE_LABEL_PROPORTIONAL_SIZE, Boolean.FALSE);
-            p.putValue(PreviewProperty.NODE_LABEL_FONT, new Font("DejaVu Sans", Font.BOLD, sparse ? 5 : 6));
+            p.putValue(PreviewProperty.NODE_LABEL_FONT, new Font("DejaVu Sans", Font.BOLD, sparse ? 5 : 9));
             p.putValue(PreviewProperty.NODE_LABEL_COLOR, new DependantOriginalColor(Color.BLACK));
             p.putValue(PreviewProperty.NODE_LABEL_OUTLINE_SIZE, 3f);
             p.putValue(PreviewProperty.NODE_LABEL_OUTLINE_COLOR, new DependantColor(Color.WHITE));
