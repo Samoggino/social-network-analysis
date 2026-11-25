@@ -1,217 +1,210 @@
-#!/usr/bin/env python3
-"""RQ4 (step 2): is a voting pattern stable across editions?
+"""Compare stability across editions using a shared permutation history."""
 
-Run from the RQ4 directory:
-    python src/analyze_rq4_temporal_stability.py
-
-The first RQ4 script compares the two layers within an edition. This one puts
-the same layer next to itself in different editions and asks how much of the
-dyadic pattern survives.
-
-For every pair of editions with a given lag (1 to 9 editions) the two networks are
-aligned on the countries present in both, and the comparison is computed on the
-dyads that were eligible votes in both editions:
-
-* Spearman and Pearson correlation of the points;
-* Pearson correlation after removing voter and recipient effects, so that a
-  country that is always popular does not by itself make the pattern look
-  stable;
-* Jaccard similarity of the two sets of scores.
-
-The statistic reported for a lag is the mean over the edition pairs with that
-lag. Its p-value comes from a null that permutes the country labels of one year
-independently inside each pair and then averages in the same way, so the null
-refers to the mean statistic and not to a single pair.
-
-The lag-1 comparison between jury and public is tested with the exact paired
-sign-flip test over the nine consecutive pairs of editions.
-
-RQ1 already measures the persistence of individual reciprocal pairs and of
-triadic configurations with a temporal null model. The unit here is different:
-whole matrices, weighted, with voter and recipient effects removed. The two
-analyses answer different questions and are meant to be read together.
-"""
-
-from __future__ import annotations
+from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
 import numpy as np
 
 from rq4_common import (
-    FIGURES_DIR,
-    LAYERS,
-    RESULTS_DIR,
-    SEED,
-    YEARS,
-    high_p,
-    load_year,
-    qap,
-    save_csv,
-    sign_flip_test,
-    two_sided_p,
+    BATCH_SIZE, LAYERS, METRICS, NULL_FIELDS, PRIMARY, SEED, Comparison, Edition,
+    adjust, figure_path, load_editions, null_summary, parser, permutation_orders,
+    save_csv, statistics,
 )
 
-N_PERM = 500
-MAX_LAG = len(YEARS) - 1
-KEYS = ("spearman", "pearson", "residual_pearson", "jaccard")
-COLOURS = {"jury": "#246b91", "public": "#cf7135"}
+COLOURS = {"jury": "#246b91", "public": "#c56328"}
 
 
-def aligned(year_a: int, year_b: int, layer: str):
-    """Two networks of the same layer, restricted to the countries they share."""
-    countries_a, W_a, E_a = load_year(year_a)[layer]
-    countries_b, W_b, E_b = load_year(year_b)[layer]
-    common = [c for c in countries_a if c in countries_b]
-    ia = [countries_a.index(c) for c in common]
-    ib = [countries_b.index(c) for c in common]
-    return (
-        W_a[np.ix_(ia, ia)], E_a[np.ix_(ia, ia)],
-        W_b[np.ix_(ib, ib)], E_b[np.ix_(ib, ib)],
-    )
-
-
-def main() -> None:
-    rng = np.random.default_rng(SEED)
-
-    pair_rows: list[dict] = []
-    lag_rows: list[list] = []
-    summary: dict[tuple[str, int, str], dict] = {}
-    heatmaps: dict[str, np.ndarray] = {}
-
-    for layer in LAYERS:
-        heat = np.full((len(YEARS), len(YEARS)), np.nan)
-        for position in range(len(YEARS)):
-            heat[position, position] = 1.0
-
-        for lag in range(1, MAX_LAG + 1):
-            observed_by_key = {key: [] for key in KEYS}
-            null_by_key = {key: [] for key in KEYS}
-
-            for start in range(len(YEARS) - lag):
-                year_a, year_b = YEARS[start], YEARS[start + lag]
-                W_a, E_a, W_b, E_b = aligned(year_a, year_b, layer)
-                observed, null = qap(W_a, W_b, E_a & E_b, N_PERM, rng)
-                for key in KEYS:
-                    observed_by_key[key].append(observed[key])
-                    null_by_key[key].append(null[key])
-                pair_rows.append({
+def observed_pairs(editions: dict[int, Edition], max_lag: int,
+                   fixed_dyads: set[tuple[str, str]] | None = None) -> tuple[list[dict], dict]:
+    years = list(editions)
+    comparisons = {}
+    records = []
+    for lag in range(1, min(len(years), max_lag + 1)):
+        for year_a, year_b in zip(years, years[lag:]):
+            first, second = editions[year_a], editions[year_b]
+            comparison = Comparison.align(first, second, fixed_dyads)
+            comparisons[year_a, year_b] = comparison
+            a_row, a_col = comparison.first
+            b_row, b_col = comparison.second
+            for layer, point_a, point_b in zip(LAYERS, first.points, second.points):
+                records.append({
                     "layer": layer, "lag": lag, "year_a": year_a, "year_b": year_b,
-                    "cells": int(observed["cells"]),
-                    **{key: observed[key] for key in KEYS},
+                    "cells": len(a_row), "voters": len(np.unique(a_row)), "recipients": len(np.unique(a_col)),
+                    **statistics(point_a[a_row, a_col], point_b[b_row, b_col], comparison.effects),
                 })
-                heat[YEARS.index(year_a), YEARS.index(year_b)] = observed["spearman"]
-                heat[YEARS.index(year_b), YEARS.index(year_a)] = observed["spearman"]
+    return records, comparisons
 
-            for key in KEYS:
-                mean_observed = float(np.nanmean(observed_by_key[key]))
-                mean_null = np.nanmean(np.vstack(null_by_key[key]), axis=0)
-                p = high_p(mean_observed, mean_null) if key == "jaccard" else two_sided_p(mean_observed, mean_null)
-                lag_rows.append([
-                    layer, lag, key, len(observed_by_key[key]), mean_observed,
-                    float(np.nanmean(mean_null)), float(np.nanquantile(mean_null, 0.025)),
-                    float(np.nanquantile(mean_null, 0.975)), p,
-                ])
-                summary[layer, lag, key] = {
-                    "mean": mean_observed, "p": p,
-                    "low": float(np.nanquantile(mean_null, 0.025)),
-                    "high": float(np.nanquantile(mean_null, 0.975)),
-                }
-            print(f"{layer}: lag {lag} computed", flush=True)
 
-        heatmaps[layer] = heat
+def temporal_batch(editions: dict[int, Edition], comparisons: dict,
+                   size: int, rng: np.random.Generator) -> np.ndarray:
+    # Each replicate has one country permutation per edition, shared by both
+    # layers and by all pairs in which that edition occurs.
+    orders = {year: permutation_orders(edition, size, rng) for year, edition in editions.items()}
+    values = []
+    for (year_a, year_b), comparison in comparisons.items():
+        a_row, a_col = comparison.first
+        b_row, b_col = comparison.second
+        order_a, order_b = orders[year_a], orders[year_b]
+        first = editions[year_a].points[:, order_a[:, a_row], order_a[:, a_col]]
+        second = editions[year_b].points[:, order_b[:, b_row], order_b[:, b_col]]
+        values.append(comparison.effects.correlation(first, second))
+    all_values = np.stack(values)
+    if not np.isfinite(all_values).all():
+        raise ValueError("Undefined residual Pearson in a temporal permutation")
+    return all_values.mean(axis=0)
 
-    save_csv(
-        RESULTS_DIR / "rq4_temporal_stability.csv",
-        ["layer", "lag", "statistic", "pairs", "mean", "null_mean", "null_q025", "null_q975", "p"],
-        lag_rows,
-    )
-    save_csv(
-        RESULTS_DIR / "rq4_temporal_pairs.csv",
-        ["layer", "lag", "year_a", "year_b", "cells"] + list(KEYS),
-        [[r[c] for c in ("layer", "lag", "year_a", "year_b", "cells") + KEYS] for r in pair_rows],
-    )
 
-    # Jury vs public, paired over the nine consecutive pairs of editions.
+def temporal_null(editions: dict[int, Edition], comparisons: dict,
+                  count: int, seed: int) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    batches = [temporal_batch(editions, comparisons, min(BATCH_SIZE, count - start), rng)
+               for start in range(0, count, BATCH_SIZE)]
+    return np.concatenate(batches, axis=1)
+
+
+def lag_summary(records: list[dict]) -> list[dict]:
+    summaries = []
+    for layer in LAYERS:
+        lags = sorted({record["lag"] for record in records})
+        for lag in lags:
+            selected = [record for record in records if record["layer"] == layer and record["lag"] == lag]
+            for metric in METRICS:
+                summaries.append({"layer": layer, "lag": lag, "statistic": metric, "pairs": len(selected),
+                                  "mean": float(np.mean([row[metric] for row in selected]))})
+    return summaries
+
+
+def layer_differences(records: list[dict]) -> list[dict]:
+    jury = [row for row in records if row["lag"] == 1 and row["layer"] == "jury"]
+    public = [row for row in records if row["lag"] == 1 and row["layer"] == "public"]
     differences = []
-    for key in ("spearman", "residual_pearson", "jaccard"):
-        jury, public = [], []
-        for year_a, year_b in zip(YEARS, YEARS[1:]):
-            for row in pair_rows:
-                if (row["layer"] == "jury" and row["lag"] == 1
-                        and row["year_a"] == year_a and row["year_b"] == year_b):
-                    jury.append(row[key])
-                if (row["layer"] == "public" and row["lag"] == 1
-                        and row["year_a"] == year_a and row["year_b"] == year_b):
-                    public.append(row[key])
-        observed, p = sign_flip_test(jury, public)
-        differences.append([key, float(np.mean(jury)), float(np.mean(public)), observed,
-                            sum(pb > jb for jb, pb in zip(jury, public)), p])
-    raw = [d[-1] for d in differences]
-    from rq4_common import benjamini_hochberg, holm
-
-    save_csv(
-        RESULTS_DIR / "rq4_temporal_layer_diff.csv",
-        ["statistic", "mean_jury", "mean_public", "public_minus_jury",
-         "pairs_public_higher", "p_exact", "p_holm", "p_fdr"],
-        [d + [h, b] for d, h, b in zip(differences, holm(raw), benjamini_hochberg(raw))],
-    )
-
-    plot_stability(summary, heatmaps)
-
-    print(f"Results: {RESULTS_DIR}")
-    print(f"Figures: {FIGURES_DIR}")
-    print("Temporal stability complete.")
+    for metric in METRICS:
+        a = np.array([row[metric] for row in jury])
+        b = np.array([row[metric] for row in public])
+        paired = np.isfinite(a) & np.isfinite(b)
+        delta = b[paired] - a[paired]
+        differences.append({
+            "statistic": metric, "pairs": len(a), "valid_pairs": len(delta),
+            "mean_jury": float(a[paired].mean()) if len(delta) else np.nan,
+            "mean_public": float(b[paired].mean()) if len(delta) else np.nan,
+            "public_minus_jury": float(delta.mean()) if len(delta) else np.nan,
+            "pairs_public_higher": int((delta > 1e-12).sum()),
+        })
+    return differences
 
 
-def plot_stability(summary: dict, heatmaps: dict) -> None:
-    lags = np.arange(1, MAX_LAG + 1)
-    fig = plt.figure(figsize=(16, 6.6))
-    grid = fig.add_gridspec(2, 3, width_ratios=(1.25, 1, 1))
+def always_eligible(editions: dict[int, Edition]) -> set[tuple[str, str]]:
+    eligible_by_year = []
+    for edition in editions.values():
+        rows, cols = np.nonzero(edition.eligible)
+        eligible_by_year.append({(edition.countries[i], edition.countries[j]) for i, j in zip(rows, cols)})
+    return set.intersection(*eligible_by_year)
 
-    panels = (
-        (grid[0, 0], "spearman", "Spearman, all common dyads"),
-        (grid[1, 0], "residual_pearson", "Pearson, voter and recipient effects removed"),
-    )
-    for position, (cell, key, title) in enumerate(panels):
-        ax = fig.add_subplot(cell)
+
+def without_edition(records: list[dict], year: int) -> list[dict]:
+    return [row for row in records
+            if row["lag"] == 1 and year not in (row["year_a"], row["year_b"])]
+
+
+def robustness_rows(editions: dict[int, Edition], records: list[dict]) -> list[dict]:
+    fixed_records, _ = observed_pairs(editions, 1, always_eligible(editions))
+    baseline = {row["statistic"]: row["public_minus_jury"] for row in layer_differences(records)}
+    scenarios = [("fixed_dyads", "", fixed_records)]
+    scenarios.extend(("leave_one_edition_out", year, without_edition(records, year)) for year in editions)
+    result = []
+    for name, excluded, selected in scenarios:
+        coverage = {f"{key}_{stat}": function(row[key] for row in selected)
+                    for key in ("cells", "voters", "recipients")
+                    for stat, function in (("min", min), ("max", max))}
+        for row in layer_differences(selected):
+            result.append({"scenario": name, "excluded_year": excluded, **coverage, **row,
+                           "change_from_main": row["public_minus_jury"] - baseline[row["statistic"]]})
+    return result
+
+
+def plot(root: Path, years: list[int], summaries: list[dict], pairs: list[dict]) -> None:
+    fig = plt.figure(figsize=(14, 6.2), layout="constrained")
+    grid = fig.add_gridspec(2, 3, width_ratios=(1.4, 1, 1))
+    lags = list(range(1, len(years)))
+    for index, (metric, title) in enumerate((
+            ("spearman", "Spearman on common dyads"),
+            (PRIMARY, "Pearson after additive fixed effects"))):
+        ax = fig.add_subplot(grid[index, 0])
         for layer in LAYERS:
-            ax.plot(lags, [summary[layer, lag, key]["mean"] for lag in lags],
-                    "o-", color=COLOURS[layer], label=layer.title())
-            ax.fill_between(
-                lags,
-                [summary[layer, lag, key]["low"] for lag in lags],
-                [summary[layer, lag, key]["high"] for lag in lags],
-                color=COLOURS[layer], alpha=0.12, label=f"QAP 95% range, {layer}",
-            )
-        ax.axhline(0, color="#666666", linewidth=0.8, linestyle=":")
-        ax.set_xticks(lags)
-        ax.set_ylabel("Mean correlation between editions")
-        ax.set_title(title)
+            records = [r for r in summaries if r["layer"] == layer and r["statistic"] == metric]
+            ax.plot(lags, [r["mean"] for r in records], "o-", label=layer.title(), color=COLOURS[layer])
+            if metric == PRIMARY:
+                r = records[0]
+                offset = -0.12 if layer == "jury" else 0.12
+                ax.vlines(1 + offset, r["null_q025"], r["null_q975"],
+                          color=COLOURS[layer], linestyle="--", linewidth=3,
+                          label=f"{layer.title()} null 95%")
+        ax.axhline(0, color="0.65", linewidth=0.8)
+        ax.set(title=title, ylabel="Mean correlation")
+        ax.set_xticks(lags, [f"{lag}\n({len(years) - lag})" for lag in lags])
         ax.grid(axis="y", alpha=0.2)
-        ax.legend(frameon=False, fontsize=7)
-        if position == 0:
-            ax.tick_params(labelbottom=False)
+        if metric == PRIMARY:
+            ax.legend(fontsize=7, ncol=2, loc="center right", bbox_to_anchor=(1, 0.59))
         else:
-            ax.set_xlabel("Lag between editions")
-
-    for column, layer in zip((1, 2), LAYERS):
+            ax.legend(fontsize=7, ncol=2, loc="upper left")
+        if index == 1:
+            ax.set_xlabel("Lag in editions (number of pairs)")
+    off_diagonal = [abs(row["spearman"]) for row in pairs]
+    bound = max(0.1, np.ceil(max(off_diagonal) * 10) / 10)
+    cmap = matplotlib.colormaps["RdBu"].with_extremes(bad="#ebebeb")
+    for column, layer in enumerate(LAYERS, start=1):
+        heat = np.full((len(years), len(years)), np.nan)
+        for row in pairs:
+            if row["layer"] == layer:
+                i, j = years.index(row["year_a"]), years.index(row["year_b"])
+                heat[i, j] = heat[j, i] = row["spearman"]
         ax = fig.add_subplot(grid[:, column])
-        image = ax.imshow(heatmaps[layer], cmap="Blues", vmin=0, vmax=0.6)
-        ax.set_xticks(range(len(YEARS)), YEARS, rotation=90, fontsize=7)
-        ax.set_yticks(range(len(YEARS)), YEARS, fontsize=7)
-        ax.set_title(f"{layer.title()}: Spearman between editions")
-        fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04)
-
-    fig.suptitle("RQ4 - Temporal stability of the voting pattern")
-    fig.tight_layout()
-    fig.savefig(FIGURES_DIR / "rq4_temporal_stability.png", dpi=200)
+        image = ax.imshow(heat, cmap=cmap, norm=TwoSlopeNorm(vmin=-bound, vcenter=0, vmax=bound))
+        ax.set_xticks(range(len(years)), years, rotation=90, fontsize=8)
+        ax.set_yticks(range(len(years)), years, fontsize=8)
+        ax.set_title(f"{layer.title()}: Spearman")
+        fig.colorbar(image, ax=ax, fraction=0.05, pad=0.04)
+    fig.suptitle("RQ4 | Stability between Grand Finals")
+    fig.savefig(figure_path(root, "rq4_temporal_stability.png"), dpi=180)
     plt.close(fig)
 
 
+def run(editions: dict[int, Edition], root: Path, count: int, seed: int) -> None:
+    pairs, comparisons = observed_pairs(editions, len(editions) - 1)
+    lag_one = {key: comparisons[key] for key in zip(editions, list(editions)[1:])}
+    samples = temporal_null(editions, lag_one, count, seed)
+    summaries = lag_summary(pairs)
+    differences = layer_differences(pairs)
+    primary_layers = [row for row in summaries if row["lag"] == 1 and row["statistic"] == PRIMARY]
+    primary_gap = next(row for row in differences if row["statistic"] == PRIMARY)
+    for row, distribution in zip(primary_layers, samples):
+        row.update(null_summary(row["mean"], distribution))
+    primary_gap.update(null_summary(primary_gap["public_minus_jury"], samples[1] - samples[0]))
+    adjust([*primary_layers, primary_gap])
+    difference_fields = ("statistic", "pairs", "valid_pairs", "mean_jury", "mean_public",
+                         "public_minus_jury", "pairs_public_higher")
+    save_csv(root, "rq4_temporal_pairs.csv",
+             ("layer", "lag", "year_a", "year_b", "cells", "voters", "recipients", *METRICS), pairs)
+    save_csv(root, "rq4_temporal_stability.csv",
+             ("layer", "lag", "statistic", "pairs", "mean", *NULL_FIELDS), summaries)
+    save_csv(root, "rq4_temporal_layer_diff.csv", (*difference_fields, *NULL_FIELDS), differences)
+    save_csv(root, "rq4_robustness.csv",
+             ("scenario", "excluded_year", "cells_min", "cells_max", "voters_min", "voters_max",
+              "recipients_min", "recipients_max", *difference_fields, "change_from_main"),
+             robustness_rows(editions, pairs))
+    plot(root, list(editions), summaries, pairs)
+
+
+def main() -> None:
+    cli = parser(__doc__, SEED + 1)
+    args = cli.parse_args()
+    if args.permutations < 1:
+        cli.error("--permutations must be positive")
+    run(load_editions(args.matrices), args.output_dir, args.permutations, args.seed)
+
+
 if __name__ == "__main__":
-    try:
-        main()
-    except (FileNotFoundError, ValueError, OSError) as exc:
-        raise SystemExit(f"RQ4 temporal stability failed: {exc}") from exc
+    main()

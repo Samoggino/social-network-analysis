@@ -203,6 +203,62 @@ def check_observed(sums, rows):
                 raise AssertionError(f'{layer} {key}: calcolato {sums[layer][j]}, precedente {expected}')
 
 
+
+def draw_publication_figure(simulated_differences, observed_differences):
+    """Crea la figura del paper, senza alterare le statistiche."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
+    titles = (
+        'Always-reciprocal dyads',
+        'Reciprocal in >=75% of eligible editions',
+        'Repeated reciprocal high-score dyads',
+    )
+    FIGURES.mkdir(parents=True, exist_ok=True)
+    fig, axes = plt.subplots(1, 3, figsize=(16, 4.7), constrained_layout=True)
+    for j, ax in enumerate(axes):
+        arr = np.asarray(simulated_differences[j], dtype=float)
+        observed = float(observed_differences[j])
+        if arr.size == 0 or not np.isfinite(arr).all():
+            raise ValueError(f'Distribuzione nulla mancante per {PRIMARY[j]}')
+        ax.hist(arr, bins=min(20, max(5, int(np.sqrt(len(arr))))),
+                color='#90a9bd', edgecolor='white', label='Null distribution')
+        ax.axvline(observed, color='#bf612e', lw=2.4, label='Observed difference')
+        ax.axvline(float(arr.mean()), color='#335a78', lw=2, ls='--', label='Null mean')
+        ax.set_title(titles[j], fontsize=11)
+        ax.set_xlabel('Difference (public - jury)', fontsize=10)
+        ax.set_ylabel('Frequency', fontsize=10)
+        ax.grid(alpha=.15)
+        ax.legend(fontsize=8, loc='upper left')
+    for extension in ('png', 'pdf'):
+        fig.savefig(FIGURES / (PREFIX + 'comparison.' + extension),
+                    dpi=300, bbox_inches='tight')
+    plt.close(fig)
+    print(f'Figura aggiornata: {FIGURES / (PREFIX + "comparison.png")}', flush=True)
+
+
+def plot_from_saved_csv():
+    """Rigenera SOLO il grafico dai risultati gia salvati, senza nuove simulazioni."""
+    histories_path = RESULTS / (PREFIX + 'simulated_histories.csv')
+    differences_path = RESULTS / (PREFIX + 'layer_differences.csv')
+    history_rows = read_rows(histories_path)
+    difference_rows = read_rows(differences_path)
+    observed_lookup = {row['statistic']: float(row['observed']) for row in difference_rows}
+    histories = {}
+    for row in history_rows:
+        key = (row['chain'], row['history'])
+        histories.setdefault(key, {})[row['layer']] = row
+    paired_rows = [layers for layers in histories.values()
+                   if 'jury' in layers and 'public' in layers]
+    if not paired_rows:
+        raise ValueError('Non sono presenti storie simulate appaiate nel CSV.')
+    arrays = [np.asarray([float(pair['public'][metric]) - float(pair['jury'][metric])
+                          for pair in paired_rows], dtype=float) for metric in PRIMARY]
+    observed = [observed_lookup[metric] for metric in PRIMARY]
+    draw_publication_figure(arrays, observed)
+
+
 def main():
     parser = argparse.ArgumentParser(description='RQ1b: modello nullo TEMPORALE in-degree-preserving')
     parser.add_argument('--histories', type=int, default=80, help='Storie complete totali (multiplo di chains)')
@@ -211,7 +267,13 @@ def main():
     parser.add_argument('--thin-per-edge', type=float, default=3.)
     parser.add_argument('--max-attempt-factor', type=int, default=80)
     parser.add_argument('--seed', type=int, default=20261118)
+    parser.add_argument('--plot-only', action='store_true',
+                        help='Rigenera solo PNG e PDF usando i CSV gia salvati')
     args = parser.parse_args()
+    if args.plot_only:
+        plot_from_saved_csv()
+        return
+    del args.plot_only
     if args.chains < 2 or args.histories < 2*args.chains or args.histories % args.chains:
         parser.error('--histories deve essere multiplo di --chains, con >=2 storie per catena')
     if min(args.burnin_per_edge,args.thin_per_edge)<=0:
@@ -293,25 +355,15 @@ def main():
                         'Selected individual pairs must not be tested without correcting selection']}
     (RESULTS/(PREFIX+'config.json')).write_text(json.dumps(config,indent=2,ensure_ascii=False),encoding='utf-8')
 
-    # Grafico opzionale: gli output numerici vengono salvati PRIMA.
-    FIGURES.mkdir(parents=True, exist_ok=True)
+    # Tutti i CSV sono gia stati salvati: la figura usa gli stessi campioni.
     try:
-        import matplotlib
-        matplotlib.use('Agg')
-        import matplotlib.pyplot as plt
-        fig,ax=plt.subplots(1,3,figsize=(13,4))
-        for j,a in enumerate(ax):
-            k=PRIMARY[j]; arr=simulations['public'][:,j]-simulations['jury'][:,j]
-            a.hist(arr,bins=min(20,max(5,int(np.sqrt(len(arr))))),color='#90a9bd',edgecolor='white')
-            a.axvline(observed['public'][j]-observed['jury'][j],color='#bf612e',lw=2,label='Osservato')
-            a.axvline(float(arr.mean()),color='#335a78',lw=2,ls='--',label='Media nulla')
-            a.set_title(k.replace('_',' '),fontsize=10); a.grid(alpha=.15); a.legend(fontsize=8)
-        fig.suptitle('RQ1b: persistenza, differenze televoto - giurie (modello nullo)')
-        fig.tight_layout()
-        fig.savefig(FIGURES/(PREFIX+'comparison.png'),dpi=140)
-        plt.close(fig)
+        arrays = [simulations['public'][:, j] - simulations['jury'][:, j]
+                  for j in range(len(PRIMARY))]
+        obs_differences = [observed['public'][j] - observed['jury'][j]
+                           for j in range(len(PRIMARY))]
+        draw_publication_figure(arrays, obs_differences)
     except OSError as exc:
-        print(f'AVVISO: grafico non salvato ({exc}); i CSV e il JSON SONO stati salvati.',flush=True)
+        print(f'AVVISO: grafico non salvato ({exc}); CSV e JSON salvati.', flush=True)
     print('Output:',RESULTS,flush=True)
     print('I p-value sono esplorativi e condizionati al modello di in-degree; controllare le diagnostiche.',flush=True)
 

@@ -43,7 +43,7 @@ LAYERS = ("jury", "public")
 SEED = 42
 N_PERM = 500
 N_SEEDS = 100
-N_PAIR_SAMPLES = 2000
+N_PAIR_SAMPLES = 240  # 240 random pairs per network/resolution for practical runtime
 RESOLUTIONS = (0.8, 1.0, 1.2)
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -76,7 +76,7 @@ def load_attributes(path: Path) -> dict[str, dict[str, object]]:
             groups = [g.strip() for g in row["language_groups"].split(";") if g.strip()]
             attributes[row["country"].strip()] = {
                 "region": row["region"].strip(),
-                "language": groups[0] if groups else "",
+                "language": groups[0] if groups else "",  # primary family only (single-label NMI/ARI)
                 "block": row["eurovision_block"].strip(),
             }
     return attributes

@@ -1,337 +1,224 @@
-#!/usr/bin/env python3
-"""Shared machinery for RQ5: walk-forward prediction of the top-3 recipients.
-
-Import only. The analysis script is analyze_rq5_prediction.py.
-
-Target. For each voter i, layer L and test edition t, rank the eligible
-recipients j and keep the first three: they are the predicted recipients of the
-12, 10 and 8 points. The question is not the exact order 12/10/8 (which is a
-possible extension), but whether the three countries are the right ones.
-
-Models. Four nested additive scores, as in the project proposal:
-
-    M0a  popularity of the recipient in the training editions
-    M0b  M0a + the historical direct tie i -> j and its reciprocity j -> i
-    M1   M0b + same UN subregion and shared language family
-    M2   M1 + same community (Louvain on the training networks) and the
-         community's internal high-vote rate
-
-Each model is a logistic regression for P(the voter gives 8+ points to the
-recipient), with L2 penalty, fitted on the eligible dyads of the training
-editions. The coefficients are therefore learned, not chosen by hand, and the
-ranking is produced by the predicted probability.
-
-Walk-forward. For a test edition t the training set is every edition before t
-(2016-2019 and 2021 onwards, 2020 cancelled). Everything that could carry
-information from the test edition - popularity, direct ties, group rates,
-communities, scaling and coefficients - is rebuilt from the training editions
-only, inside each fold.
-
-Classification threshold. The proposal fixes the number of positives: three per
-ballot. For this reason the evaluation is a ranking one (top-3) and not a
-classification one, and it is computed only on recipients that were eligible
-for that specific voter and edition.
-"""
+"""Historical features, community detection and ranking metrics for RQ5."""
 
 from __future__ import annotations
 
 import csv
+import hashlib
 from pathlib import Path
 
 import networkx as nx
 import numpy as np
 
 YEARS = (2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025, 2026)
+TEST_YEARS = (2023, 2024, 2025, 2026)
 LAYERS = ("jury", "public")
-HIGH = 8                      # 8, 10 and 12 points; exactly three per ballot
-SMOOTH = 5.0                  # a in p_G = (k_G + a p0) / (n_G + a)
-L2 = 1.0                      # fixed ex ante, on standardised features
-COMMUNITY_SEEDS = range(10)   # Louvain seeds; the best modularity is kept
+BALLOT = (1, 2, 3, 4, 5, 6, 7, 8, 10, 12)
+HIGH = 8
 TOP_K = 3
+SMOOTH = 5.0
+L2 = 1.0
+COMMUNITY_SEEDS = range(10)
+CONSENSUS_SEEDS = 200
+TIE_SEED = 42
+MIN_HISTORY = 2
+MAX_ITER = 100
+STEP_TOL = 1e-8
+GRADIENT_TOL = 1e-7
 
-FOLDS = (
-    (2023, (2016, 2017, 2018, 2019, 2021, 2022)),
-    (2024, (2016, 2017, 2018, 2019, 2021, 2022, 2023)),
-    (2025, (2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024)),
-    (2026, (2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025)),
-)
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-ROOT = SCRIPT_DIR.parent if SCRIPT_DIR.name.lower() == "src" else SCRIPT_DIR
+ROOT = Path(__file__).resolve().parents[1]
 MATRIX_DIR = ROOT.parent / "RQ1" / "processed_data" / "matrices"
 ATTRIBUTES = ROOT.parent / "RQ2" / "processed_data" / "tables" / "country_attributes_rq2.csv"
-RESULTS_DIR = ROOT / "results" / "rq5"
-FIGURES_DIR = ROOT / "figures" / "rq5"
+RQ2_SRC = ROOT.parent / "RQ2" / "src"
 
-FEATURES = (
-    "pop", "tie", "tie_points", "recip",
-    "same_region", "shared_language", "same_community", "cohesion",
-)
-
-MODELS = {
-    "M0a": ("pop",),
-    "M0b": ("pop", "tie", "tie_points", "recip"),
-    "M1": ("pop", "tie", "tie_points", "recip", "same_region", "shared_language"),
-    "M2": ("pop", "tie", "tie_points", "recip", "same_region", "shared_language",
-           "same_community", "cohesion"),
-}
-MODEL_ORDER = tuple(MODELS)
+FEATURES = ("pop", "tie", "tie_points", "recip", "same_region", "shared_language",
+            "same_community", "cohesion")
+MODELS = {"M0a": FEATURES[:1], "M0b": FEATURES[:4], "M1": FEATURES[:6], "M2": FEATURES}
+BASELINE = "History"
+CONSENSUS_MODEL = "M2_consensus"
+MODEL_ORDER = (BASELINE, *MODELS)
 
 
-def save_csv(path: Path, columns: list[str], rows: list[tuple]) -> None:
+def save_csv(root: Path, filename: str, fields: tuple[str, ...], records: list[dict]) -> None:
+    path = root / "results" / "rq5" / filename
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8-sig", newline="") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(columns)
-        writer.writerows(
-            [[round(v, 10) if isinstance(v, float) else v for v in row] for row in rows]
-        )
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        for record in records:
+            writer.writerow({key: round(float(value), 10) if isinstance(value, (float, np.floating))
+                             else value for key, value in record.items()})
 
 
-def read_matrix(path: Path) -> tuple[list[str], np.ndarray, np.ndarray]:
-    """Return countries, points W and eligibility mask E, with ballot checks."""
-    if not path.is_file():
-        raise FileNotFoundError(f"Matrix not found: {path}")
+def read_matrix(path: Path):
     with path.open(encoding="utf-8-sig", newline="") as handle:
-        rows = list(csv.reader(handle))
-    if rows[0][0] != "country":
-        raise ValueError(f"Unexpected header in {path.name}")
-    countries = rows[0][1:]
-    if [row[0] for row in rows[1:]] != countries:
-        raise ValueError(f"Row and column labels differ in {path.name}")
-    n = len(countries)
-    W = np.zeros((n, n))
-    E = np.zeros((n, n), dtype=bool)
-    for i, row in enumerate(rows[1:]):
-        for j, raw in enumerate(row[1:]):
-            if raw.strip() == "":
-                continue
-            E[i, j] = True
-            W[i, j] = float(raw)
-    # The voting rule is fixed: ten scores per ballot, three of them 8 or more.
-    for i, country in enumerate(countries):
-        given = W[i][W[i] > 0]
-        if len(given) == 0:
-            continue
-        if len(given) != 10 or int((given >= HIGH).sum()) != TOP_K:
-            raise ValueError(
-                f"Unexpected ballot for {country} in {path.name}: "
-                f"{len(given)} scores, {int((given >= HIGH).sum())} high"
-            )
-    return countries, W, E
+        header, *records = csv.reader(handle)
+    countries = tuple(header[1:])
+    if (header[0] != "country" or not countries or len(set(countries)) != len(countries)
+            or "WLD" in countries or any(len(row) != len(header) for row in records)
+            or [row[0] for row in records] != list(countries)):
+        raise ValueError(f"Invalid country coordinates in {path}")
+    eligible = np.array([[bool(value.strip()) for value in row[1:]] for row in records])
+    finalists = eligible.any(axis=0)
+    if not np.array_equal(eligible, finalists[None, :] & ~np.eye(len(countries), dtype=bool)):
+        raise ValueError(f"Invalid eligibility in {path}")
+    votes = np.array([[float(value) if value.strip() else 0.0 for value in row[1:]] for row in records])
+    for country, ballot in zip(countries, votes):
+        if not np.all(np.isin(ballot, (0, *BALLOT))) or tuple(sorted(ballot[ballot > 0])) != BALLOT:
+            raise ValueError(f"Invalid ballot for {country} in {path}")
+    return countries, votes, eligible
 
 
-def load_all() -> dict[tuple[int, str], tuple[list[str], np.ndarray, np.ndarray]]:
-    return {
-        (year, layer): read_matrix(MATRIX_DIR / f"{year}_{layer}.csv")
-        for year in YEARS
-        for layer in LAYERS
-    }
-
-
-def load_attributes(path: Path = ATTRIBUTES) -> dict[str, dict]:
-    """Country attributes, with the language families as a set."""
-    if not path.is_file():
-        raise FileNotFoundError(f"Attribute table not found: {path}")
-    with path.open(encoding="utf-8-sig", newline="") as handle:
-        rows = list(csv.DictReader(handle))
+def load_attributes(path: Path) -> dict:
     attributes = {}
-    for row in rows:
-        attributes[row["country"]] = {
-            "region": row["region"],
-            "languages": {part.strip() for part in row["language_groups"].split(";") if part.strip()},
-            "block": row["eurovision_block"],
-        }
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        for row in csv.DictReader(handle):
+            country, region = row["country"], row["region"].strip()
+            languages = frozenset(part.strip() for part in row["language_groups"].split(";") if part.strip())
+            if country in attributes or not region or not languages:
+                raise ValueError(f"Duplicate or incomplete attributes for {country}")
+            attributes[country] = (region, languages)
     return attributes
 
 
-class Training:
-    """Historical statistics of one fold and one layer, training editions only.
+class History:
+    """Votes and graph observed strictly before one edition, in one voting layer."""
 
-    Countries are mapped to a global index so that editions with different
-    participants can be accumulated. Every count is a number of eligible
-    opportunities: a high-vote rate is always "high votes / times the voter
-    could vote for that recipient".
-    """
-
-    def __init__(self, matrices, layer: str, years: tuple[int, ...],
-                 universe: list[str], attributes: dict[str, dict]):
-        index = {country: position for position, country in enumerate(universe)}
-        size = len(universe)
-        self.universe = universe
-        self.index = index
-        self.layer = layer
+    def __init__(self, matrices: dict, layer: str, before: int, attributes: dict):
+        self.years = tuple(sorted(y for y, kind in matrices if kind == layer and y < before))
+        if not self.years:
+            raise ValueError(f"No history for {layer} before {before}")
+        names = sorted({country for year in self.years for country in matrices[year, layer][0]})
+        self.index = {country: position for position, country in enumerate(names)}
         self.attributes = attributes
+        self.opportunities = np.zeros((len(names), len(names)))
+        high, points = np.zeros_like(self.opportunities), np.zeros_like(self.opportunities)
+        graph = nx.Graph()
+        graph.add_nodes_from(names)
+        for year in self.years:
+            countries, votes, eligible = matrices[year, layer]
+            positions = np.array([self.index[country] for country in countries])
+            row, col = np.nonzero(eligible)
+            values = votes[row, col]
+            ii, jj = positions[row], positions[col]
+            np.add.at(self.opportunities, (ii, jj), 1)
+            np.add.at(high, (ii, jj), values >= HIGH)
+            np.add.at(points, (ii, jj), values)
+            for i, j, value in zip(row, col, values):
+                if value > 0:
+                    a, b = countries[i], countries[j]
+                    edge = graph.get_edge_data(a, b, {"weight": 0.0})
+                    graph.add_edge(a, b, weight=edge["weight"] + float(value))
+        self.high = high
+        self.p0 = float(high.sum() / self.opportunities.sum())
+        self.mean_points = float(points.sum() / self.opportunities.sum())
+        self.base_rate = (SMOOTH * self.p0) / SMOOTH
+        self.base_points = (SMOOTH * self.mean_points) / SMOOTH
+        self.pop = (high.sum(axis=0) + SMOOTH * self.p0) / (self.opportunities.sum(axis=0) + SMOOTH)
+        self.tie = (high + SMOOTH * self.p0) / (self.opportunities + SMOOTH)
+        self.tie_points = (points + SMOOTH * self.mean_points) / (self.opportunities + SMOOTH)
+        self.graph = graph
+        self.partitions = {}
+        self.set_partition("best", self.best_partition())
 
-        self.high_received = np.zeros(size)
-        self.opportunities_received = np.zeros(size)
-        self.high_direct = np.zeros((size, size))
-        self.opportunities_direct = np.zeros((size, size))
-        self.points_sum = np.zeros((size, size))
+    def best_partition(self) -> list[set[str]]:
+        candidates = (nx.community.louvain_communities(self.graph, weight="weight", seed=seed)
+                      for seed in COMMUNITY_SEEDS)
+        return max(candidates, key=lambda groups: nx.community.modularity(self.graph, groups, weight="weight"))
 
-        for year in years:
-            countries, W, E = matrices[(year, layer)]
-            positions = np.array([index[country] for country in countries])
-            rows, columns = np.nonzero(E)
-            ii, jj = positions[rows], positions[columns]
-            values = W[rows, columns]
-            high = values >= HIGH
+    def set_partition(self, method: str, groups: list[set[str]]) -> None:
+        labels, cohesion = {}, {}
+        for label, group in enumerate(sorted(groups, key=lambda members: min(members))):
+            for country in group:
+                labels[country] = label
+            positions = [self.index[country] for country in sorted(group)]
+            internal = np.ix_(positions, positions)
+            value = (self.high[internal].sum() + SMOOTH * self.p0) / (
+                self.opportunities[internal].sum() + SMOOTH)
+            cohesion[label] = float(value - self.p0)
+        self.partitions[method] = (labels, cohesion, len(groups),
+                                   nx.community.modularity(self.graph, groups, weight="weight"))
 
-            np.add.at(self.opportunities_direct, (ii, jj), 1.0)
-            np.add.at(self.points_sum, (ii, jj), values)
-            np.add.at(self.high_direct, (ii, jj), high.astype(float))
-            np.add.at(self.opportunities_received, jj, 1.0)
-            np.add.at(self.high_received, jj, high.astype(float))
+    def learn_consensus(self, method) -> None:
+        nodes = list(self.index)
+        groups = method(self.graph, nodes)
+        self.set_partition("consensus", groups)
 
-        self.p0 = float(self.high_direct.sum() / self.opportunities_direct.sum())
-        self.mean_points = float(self.points_sum.sum() / self.opportunities_direct.sum())
+    def has_history(self, voter: str, recipient: str) -> bool:
+        i, j = self.index.get(voter), self.index.get(recipient)
+        return i is not None and j is not None and bool(self.opportunities[i, j] > 0)
 
-        # Smoothed rates, as in the proposal.
-        self.pop = (self.high_received + SMOOTH * self.p0) / (
-            self.opportunities_received + SMOOTH)
-        self.tie = (self.high_direct + SMOOTH * self.p0) / (
-            self.opportunities_direct + SMOOTH)
-        self.tie_points = (self.points_sum + SMOOTH * self.mean_points) / (
-            self.opportunities_direct + SMOOTH)
-        # Reciprocity: the same rate in the other direction. It uses the
-        # transposed counts, so an opportunity that does not exist is smoothed
-        # to p0 and does not become a zero.
-        self.recip = (self.high_direct.T + SMOOTH * self.p0) / (
-            self.opportunities_direct.T + SMOOTH)
-
-        self.partition, self.community_info = louvain_partition(
-            matrices, layer, years, universe)
-        self.cohesion = self._community_cohesion()
-
-    def _community_cohesion(self) -> dict[int, float]:
-        """Smoothed internal high-vote rate of each community, minus p0."""
-        communities: dict[int, float] = {}
-        labels = np.array([self.partition[country] for country in self.universe])
-        for community in set(labels.tolist()):
-            members = labels == community
-            internal = np.ix_(members, members)
-            opportunities = self.opportunities_direct[internal].sum()
-            high = self.high_direct[internal].sum()
-            communities[community] = float(
-                ((high + SMOOTH * self.p0) / (opportunities + SMOOTH)) - self.p0)
-        return communities
-
-    def features(self, i: int, j: int) -> tuple[float, ...]:
-        same_region = 1.0 if self.attributes[self.universe[i]]["region"] == \
-            self.attributes[self.universe[j]]["region"] else 0.0
-        shared_language = 1.0 if (
-            self.attributes[self.universe[i]]["languages"]
-            & self.attributes[self.universe[j]]["languages"]) else 0.0
-        same_community = 1.0 if self.partition[self.universe[i]] == \
-            self.partition[self.universe[j]] else 0.0
-        cohesion = same_community * self.cohesion[self.partition[self.universe[i]]]
-        return (
-            self.pop[j],
-            self.tie[i, j],
-            self.tie_points[i, j] / 12.0,
-            self.recip[i, j],
-            same_region,
-            shared_language,
-            same_community,
-            cohesion,
-        )
+    def features(self, voter: str, recipient: str, method: str = "best") -> tuple:
+        i, j = self.index.get(voter), self.index.get(recipient)
+        region_i, languages_i = self.attributes[voter]
+        region_j, languages_j = self.attributes[recipient]
+        labels, cohesion, _, _ = self.partitions[method]
+        joint = i is not None and j is not None
+        same = joint and labels[voter] == labels[recipient]
+        return (self.pop[j] if j is not None else self.base_rate,
+                self.tie[i, j] if joint else self.base_rate,
+                (self.tie_points[i, j] if joint else self.base_points) / 12.0,
+                self.tie[j, i] if joint else self.base_rate,
+                float(region_i == region_j), float(bool(languages_i & languages_j)),
+                float(same), cohesion[labels[voter]] if same else 0.0)
 
 
-def louvain_partition(matrices, layer: str, years: tuple[int, ...],
-                      universe: list[str]) -> tuple[dict[str, int], dict[str, float]]:
-    """Louvain on the undirected aggregate of the training networks.
-
-    Only training editions enter the graph. Of COMMUNITY_SEEDS runs the one with
-    the highest modularity is kept, so the result does not depend on a lucky
-    seed; the spread of the modularity is reported by the analysis script.
-    """
-    graph = nx.Graph()
-    graph.add_nodes_from(universe)
-    for year in years:
-        countries, W, E = matrices[(year, layer)]
-        for a, country_a in enumerate(countries):
-            for b, country_b in enumerate(countries):
-                if a != b and E[a, b] and W[a, b] > 0:
-                    weight = float(W[a, b])
-                    if graph.has_edge(country_a, country_b):
-                        graph[country_a][country_b]["weight"] += weight
-                    else:
-                        graph.add_edge(country_a, country_b, weight=weight)
-
-    best_partition, best_modularity = None, -np.inf
-    for seed in COMMUNITY_SEEDS:
-        partition = nx.algorithms.community.louvain_communities(
-            graph, weight="weight", seed=seed)
-        modularity = nx.algorithms.community.modularity(graph, partition, weight="weight")
-        if modularity > best_modularity:
-            best_partition, best_modularity = partition, modularity
-
-    labels: dict[str, int] = {}
-    for label, community in enumerate(sorted(best_partition, key=lambda c: sorted(c)[0])):
-        for country in community:
-            labels[country] = label
-    for country in universe:                     # isolated countries
-        labels.setdefault(country, len(labels))
-    return labels, {
-        "modularity": float(best_modularity),
-        "communities": len(best_partition),
-        "weighted_edges": float(graph.number_of_edges()),
-    }
+def design(history: History, countries: tuple, eligibility: np.ndarray, method: str) -> np.ndarray:
+    return np.array([history.features(countries[i], countries[j], method)
+                     for i, j in zip(*np.nonzero(eligibility))])
 
 
-def build_design(training: Training, countries: list[str], W: np.ndarray,
-                 E: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Feature matrix and target for every eligible dyad of one edition."""
-    rows, columns = np.nonzero(E)
-    ii = np.array([training.index[country] for country in np.array(countries)[rows]])
-    jj = np.array([training.index[country] for country in np.array(countries)[columns]])
-    X = np.array([training.features(int(i), int(j)) for i, j in zip(ii, jj)])
-    y = (W[rows, columns] >= HIGH).astype(float)
-    return X, y, np.column_stack([rows, columns])
-
-
-def standardise(X: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    mean = X.mean(axis=0)
-    scale = X.std(axis=0)
-    scale[scale == 0] = 1.0
+def standardise(X: np.ndarray):
+    mean, scale = X.mean(axis=0), X.std(axis=0)
+    scale[scale == 0] = 1
     return (X - mean) / scale, mean, scale
 
 
-def fit_logistic(X: np.ndarray, y: np.ndarray, l2: float = L2,
-                 max_iter: int = 100) -> np.ndarray:
-    """L2 logistic regression by Newton iterations (no scipy needed)."""
-    n, d = X.shape
-    design = np.hstack([np.ones((n, 1)), X])
-    penalty = l2 * np.r_[0.0, np.ones(d)]
-    beta = np.zeros(d + 1)
-    for _ in range(max_iter):
-        linear = design @ beta
-        p = 1.0 / (1.0 + np.exp(-np.clip(linear, -35, 35)))
+def probabilities(linear: np.ndarray) -> np.ndarray:
+    return 1 / (1 + np.exp(-np.clip(linear, -35, 35)))
+
+
+def fit_logistic(X: np.ndarray, y: np.ndarray):
+    """Same L2 objective as the original, with explicit convergence checks."""
+    if not np.isfinite(X).all() or not np.isfinite(y).all() or set(np.unique(y)) != {0, 1}:
+        raise ValueError("Invalid logistic design or targets")
+    matrix = np.column_stack((np.ones(len(X)), X))
+    penalty = L2 * np.r_[0.0, np.ones(X.shape[1])]
+    coef = np.zeros(matrix.shape[1])
+    gradient_inf = float("inf")
+    for iteration in range(1, MAX_ITER + 1):
+        p = probabilities(matrix @ coef)
+        gradient = matrix.T @ (p - y) + penalty * coef
         weight = np.clip(p * (1 - p), 1e-8, None)
-        gradient = design.T @ (p - y) + penalty * beta
-        hessian = (design * weight[:, None]).T @ design + np.diag(penalty)
+        hessian = (matrix * weight[:, None]).T @ matrix + np.diag(penalty)
         step = np.linalg.solve(hessian, gradient)
-        beta -= step
-        if np.abs(step).max() < 1e-8:
-            break
-    return beta
+        coef -= step
+        if not np.isfinite(coef).all():
+            raise ValueError("Non-finite logistic coefficients")
+        next_p = probabilities(matrix @ coef)
+        gradient_inf = float(np.max(np.abs(matrix.T @ (next_p - y) + penalty * coef)))
+        if np.max(np.abs(step)) < STEP_TOL and gradient_inf <= GRADIENT_TOL:
+            return coef, {"iterations": iteration, "converged": 1, "gradient_inf": gradient_inf}
+    raise ValueError(f"Logistic regression did not converge in {MAX_ITER} iterations (gradient {gradient_inf})")
 
 
-def score(beta: np.ndarray, X: np.ndarray) -> np.ndarray:
-    return beta[0] + X @ beta[1:]
+def rank_scores(candidates: tuple[str, ...], values: np.ndarray, year: int, voter: str,
+                secondary: np.ndarray | None = None):
+    """Return the revised and legacy ranking, with a tie flag at the cutoff."""
+    # Byte-sorted SHA-256 keys are stable across Python processes and file order.
+    priority = [hashlib.sha256(f"{TIE_SEED}:{year}:{voter}:{country}".encode()).digest()
+                for country in candidates]
+    second = np.zeros(len(values)) if secondary is None else secondary
+    order = sorted(range(len(values)), key=lambda i: (-values[i], -second[i], priority[i], candidates[i]))
+    legacy = np.argsort(-values, kind="mergesort")
+    boundary = len(order) > TOP_K and all(
+        scores[order[TOP_K - 1]] == scores[order[TOP_K]] for scores in (values, second))
+    return (tuple(candidates[i] for i in order), tuple(candidates[i] for i in legacy), boundary)
 
 
-def ranking_metrics(true: set[int], ranked: list[int], k: int = TOP_K) -> tuple[float, float, float]:
-    """Hit@k, NDCG@k and reciprocal rank of the first true recipient."""
+def ranking_metrics(true: set, ranked: tuple, k: int = TOP_K) -> tuple[float, float, float]:
     top = ranked[:k]
-    hits = len(set(top) & true)
-    hit = hits / k
-    dcg = sum(1.0 / np.log2(position + 2) for position, item in enumerate(top) if item in true)
-    idcg = sum(1.0 / np.log2(position + 2) for position in range(min(k, len(true))))
-    ndcg = dcg / idcg if idcg else 0.0
-    reciprocal = 0.0
-    for position, item in enumerate(ranked):
-        if item in true:
-            reciprocal = 1.0 / (position + 1)
-            break
-    return hit, ndcg, reciprocal
+    hit = len(set(top) & true) / k
+    dcg = sum(1 / np.log2(position + 2) for position, item in enumerate(top) if item in true)
+    idcg = sum(1 / np.log2(position + 2) for position in range(min(k, len(true))))
+    reciprocal = next((1 / (i + 1) for i, candidate in enumerate(ranked) if candidate in true), 0.0)
+    return hit, dcg / idcg if idcg else 0.0, reciprocal

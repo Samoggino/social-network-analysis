@@ -5,7 +5,7 @@ Run from the RQ3 directory:
     python src/analyze_rq3.py
 
 Requires numpy, networkx and matplotlib. Reads, without modifying them:
-  * the 20 annual matrices (default: ../RQ1/processed_data/matrices; the same
+  * the 20 annual matrices (default: ../RQ2/processed_data/matrices; the same
     matrices are produced by build_eurovision_data.py and by
     scripts/build_graph.py --matrices);
   * the country attribute table (default:
@@ -89,9 +89,10 @@ LABELS = {"jury": "Jury", "public": "Public"}
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parent if SCRIPT_DIR.name.lower() == "src" else SCRIPT_DIR
-DEFAULT_MATRICES = ROOT.parent / "RQ1" / "processed_data" / "matrices"
-DEFAULT_ATTRIBUTES = ROOT.parent / "RQ2" / "processed_data" / "tables" / "country_attributes_rq2.csv"
-DEFAULT_COMMUNITIES = ROOT.parent / "RQ2" / "results" / "rq2" / "rq2_consensus_labels.csv"
+RQ2 = ROOT.parent / "RQ2"
+DEFAULT_MATRICES = RQ2 / "processed_data" / "matrices"
+DEFAULT_ATTRIBUTES = RQ2 / "processed_data" / "tables" / "country_attributes_rq2.csv"
+DEFAULT_COMMUNITIES = RQ2 / "results" / "rq2" / "rq2_consensus_labels.csv"
 RESULTS = ROOT / "results" / "rq3"
 FIGURES = ROOT / "figures" / "rq3"
 
@@ -156,11 +157,19 @@ def load_communities(path: Path) -> dict[tuple[int, str], dict[str, tuple[str, f
         )
     out: dict = {}
     with path.open(encoding="utf-8-sig", newline="") as handle:
-        for row in csv.DictReader(handle):
+        rows = csv.DictReader(handle)
+        columns = set(rows.fieldnames or ())
+        label_column, firmness_column = "consensus_community", "mean_within_community_coassignment"
+        if not {label_column, firmness_column} <= columns:
+            label_column, firmness_column = "community", "mean_co_assignment_within"
+        required = {"scope", "year", "layer", "country", label_column, firmness_column}
+        if not required <= columns:
+            raise ValueError(f"Unsupported RQ2 consensus labels schema: {path}")
+        for row in rows:
             if row["scope"] != "all":
                 continue
             out.setdefault((int(row["year"]), row["layer"]), {})[row["country"]] = (
-                row["community"], float(row["mean_co_assignment_within"])
+                row[label_column], float(row[firmness_column])
             )
     return out
 

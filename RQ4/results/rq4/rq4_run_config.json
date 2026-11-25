@@ -1,0 +1,79 @@
+{
+  "batch_size": 160,
+  "holm_families": {
+    "temporal_lag_1": [
+      "jury",
+      "public",
+      "public_minus_jury"
+    ],
+    "within_edition": [
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025,
+      2026
+    ]
+  },
+  "layers": [
+    "jury",
+    "public"
+  ],
+  "matrix_sha256": {
+    "2016_jury.csv": "1b180cc9bb68c70f683c1e9dd74054be883266e4bf332fac2927a62d0a1175dd",
+    "2016_public.csv": "cd30a03ef178f5ad1c9f408b4ff4c58147bb29614849e6564e3a048264ea0bb7",
+    "2017_jury.csv": "bf55e5a8055b45797c8c1f76e6c8a4c70b0c23634f893c443660f451cdcd3f80",
+    "2017_public.csv": "d5c64873ed5bdd39aabcc71da842cffd7b6f17b435a03f4d0c919c7ade236b37",
+    "2018_jury.csv": "4ef525cd3662924aaa003a8d318049c164b0ea44ee6dc8a6c8c3fbf49fea8cbc",
+    "2018_public.csv": "bbf9d7d60453fae2662842e2df88718a7470faa3f24a4a9795100c3e0b1f178e",
+    "2019_jury.csv": "ef88751f0e5dbdd3f800b214b9ad1845d2cfc4248470522291efa5d937f01a0c",
+    "2019_public.csv": "4cf5408a513bedec028719db9ea56b7464f9bd90d3510ee4dd74681eac52fe00",
+    "2021_jury.csv": "8ecd4b8ec9bfe7dad64425c04a40cb427fadd716fc95fe0bee5e017f534ff84d",
+    "2021_public.csv": "934bd07d5cd5464418690b7706ad777446836a59d2f7320822b0ddde0212eecb",
+    "2022_jury.csv": "d2bf410fe1a6045e9d891483af1c83fa69bb399c13268f60913760eb4864e3a4",
+    "2022_public.csv": "504fa81f3e302ad392ab7a674f71115189d67fbd0cd598ef57dba50fb5b93de0",
+    "2023_jury.csv": "2e979dd956db78fb2a7527bcd9ee997d65c1c7aef4f349e45ded1ecb009eeb97",
+    "2023_public.csv": "e284ffb788988e7b280aa79f3ccb0dc2e55e607041aec9c5020330f865c38263",
+    "2024_jury.csv": "af7ed68d7fb86d4089c273bf0b8e1ed9b8342e2fe2bd1f83d1c8dc99099d82e8",
+    "2024_public.csv": "7e5bead794b8c10aa85cf425faa11432ca185c18b845790b1362dab5df4a48ae",
+    "2025_jury.csv": "bec4a33a9c1e88354789eedd2016499057e647c72caf867a18a3106021d094c9",
+    "2025_public.csv": "9c373ac88567a939e05977161aabfed9adf450fabddade4386b1dafefdfd370e",
+    "2026_jury.csv": "ede2d8f94544279ba3e5a987babb61686325f0654998ab7aa58878e346579881",
+    "2026_public.csv": "72a2494f83296a483ef87c036763c1a65d1f5594bec0d844e505ea8f5089f937"
+  },
+  "p_value": "two-sided equal tails, Monte Carlo +1",
+  "permutation_strata": [
+    "finalists",
+    "non-finalists"
+  ],
+  "permutations": 9999,
+  "primary_lag": 1,
+  "primary_statistic": "residual_pearson",
+  "random_generator": "NumPy PCG64",
+  "seeds": {
+    "temporal": 43,
+    "within_edition": 42
+  },
+  "temporal_pair_weights": "equal by edition pair",
+  "versions": {
+    "matplotlib": "3.10.8",
+    "numpy": "2.3.5",
+    "python": "3.12.14"
+  },
+  "years": [
+    2016,
+    2017,
+    2018,
+    2019,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ]
+}

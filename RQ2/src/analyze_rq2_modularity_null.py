@@ -51,7 +51,7 @@ from analyze_rq2_partitions import (
     weighted_projection,
 )
 
-N_NULL = 500
+N_NULL = 2000  # quick reproducible run; raise to >=1000 for publication-grade Monte Carlo
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parent if SCRIPT_DIR.name.lower() == "src" else SCRIPT_DIR
