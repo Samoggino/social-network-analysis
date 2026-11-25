@@ -21,26 +21,15 @@ this null tests the bridging measures only. Under it the question becomes the
 right one: given who is popular, do the points come disproportionately from the
 finalist's own group?
 
-Three statistics are tested per network and per grouping: the mean home excess,
-the mean participation ratio, and the Spearman correlation between prestige and
-participation (the fourth result of RQ3). The last one is why the root README
-listed this null as missing: under uniform ballots the mechanical part of that
-correlation is only about 0.25, and with the observed popularity distribution it
-may be larger. It is: with in-degree and in-strength fixed the null correlation
-is 0.75 for juries and 0.84 for the public, against 0.72 and 0.82 observed. The
-observed correlation is therefore the mechanical value, not evidence of bloc
-support, and the fourth result is read accordingly in the README.
+Three statistics are tested per network and grouping: mean home excess, mean
+participation ratio, and the Spearman correlation of participation with prestige.
+The conditional reference captures the dependence induced by redistributing the
+observed scores and number of voters. Comparisons between layers use deviations
+from each network's own reference, in units of its null standard deviation.
 
-Because the null has no popularity signal, the z-scores of the observed values
-against it are also comparable across layers, which the uniform null does not
-guarantee: the public layer has a wider null spread. The layer difference is
-therefore also tested on the z-scores.
-
-Entropy, named by the official RQ3 specification next to Gini and PageRank, is
-added here: normalised Shannon entropy of the share of points received, with the
-same uniform-ballot null. It is monotone in the Herfindahl index already
-reported, so it adds no new information; it is computed so that the repository
-covers the measures it claims to cover.
+Entropy uses normalised Shannon entropy of received point shares and the
+uniform-ballot null. All eligible finalists, including zero-point finalists,
+count in the normalisation.
 """
 
 from __future__ import annotations
@@ -52,6 +41,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import rankdata
 
 from analyze_rq3 import (
     COLORS,
@@ -90,11 +80,15 @@ def save(path: Path, columns: list[str], rows: list[list]) -> None:
 
 def entropy(in_strength: np.ndarray) -> float:
     """Normalised Shannon entropy of the points received (1 = equal shares)."""
-    share = in_strength / in_strength.sum()
-    share = share[share > 0]
-    if len(share) < 2:
+    # Normalize by all eligible finalists, including those with zero points.
+    # Zero-point finalists contribute 0 to Shannon entropy, but remain in the
+    # possible outcome space used by the denominator.
+    n_finalists = len(in_strength)
+    if n_finalists < 2 or in_strength.sum() <= 0:
         return float("nan")
-    return float(-(share * np.log(share)).sum() / np.log(len(share)))
+    share = in_strength / in_strength.sum()
+    positive = share[share > 0]
+    return float(-(positive * np.log(positive)).sum() / np.log(n_finalists))
 
 
 def popularity_null(
@@ -144,23 +138,26 @@ def popularity_null(
         if in_degree[j] >= MIN_VOTERS:
             kept_enough.append(len(kept) - 1)
 
-    home = np.array(home)   # finalists that received points x replicates
+    home = np.array(home)   # retained finalists x replicates
     part = np.array(part)
-    kept = np.array(kept, dtype=int)   # their column index in the full matrix
+    kept = np.asarray(kept, dtype=int)
     enough = np.array(kept_enough, dtype=int)
 
     def correlation(selection: np.ndarray) -> np.ndarray:
-        """Spearman between prestige and participation ratio.
-
-        `selection` indexes the rows of `part`, which are the finalists that
-        received at least one point, in the order they appear in `kept`; the
-        country index in the full matrix is therefore kept[selection]. Using
-        `prestige[selection]` directly would read the prestige of the first
-        countries in alphabetical order instead.
-        """
-        return np.array([
-            spearman(prestige[kept[selection]], part[selection, b]) for b in range(n_null)
-        ])
+        # The rows of part are retained finalists. kept maps them to countries.
+        if len(selection) < 3:
+            return np.full(n_null, np.nan)
+        x = prestige[kept[selection]]
+        y = part[selection, :]
+        if not (np.isfinite(x).all() and np.isfinite(y).all()):
+            # Keep pairwise deletion when a replicate has missing participation.
+            return np.array([spearman(x, y[:, b]) for b in range(n_null)])
+        rx = rankdata(x, method="average").astype(float)
+        ry = rankdata(y, axis=0, method="average").astype(float)
+        rx -= rx.mean()
+        ry -= ry.mean(axis=0)
+        denom = np.sqrt(np.dot(rx, rx) * np.sum(ry ** 2, axis=0))
+        return np.divide(rx @ ry, denom, out=np.full(n_null, np.nan), where=denom > 0)
 
     return {
         "home_excess": home.mean(axis=0),
@@ -246,8 +243,7 @@ def main() -> None:
                 bridge = bridging(W, eligible, G, finalists)
                 null = popularity_null(W, eligible, G, finalists, prestige, args.null_samples, rng)
 
-                # Observed values are computed on the same finalists as the
-                # null, i.e. those that received at least one point.
+                # Match the observed sample to the retained finalists in the null.
                 kept = null["kept"]
                 observed = {
                     "home_excess": float(np.nanmean(bridge["home_excess"][kept])),

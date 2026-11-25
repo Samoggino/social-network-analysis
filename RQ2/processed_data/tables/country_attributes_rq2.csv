@@ -9,30 +9,30 @@ BE,Belgium,Western Europe,Germanic;Romance,Western,Dutch and French
 BG,Bulgaria,Eastern Europe,Slavic,Balkan,
 BY,Belarus,Eastern Europe,Slavic,Eastern,
 CH,Switzerland,Western Europe,Germanic;Romance,Western,"German, French, Italian"
-CY,Cyprus,Western Asia,Greek,Mediterranean,Greek and Turkish
+CY,Cyprus,Western Asia,Greek;Turkic,Mediterranean,Greek and Turkish
 CZ,Czechia,Eastern Europe,Slavic,Eastern,
-DE,Germany,Western Europe,Germanic,Big Five,
+DE,Germany,Western Europe,Germanic,Western,
 DK,Denmark,Northern Europe,Germanic,Nordic,
 EE,Estonia,Northern Europe,Uralic,Baltic,
-ES,Spain,Southern Europe,Romance,Big Five,
-FI,Finland,Northern Europe,Uralic,Nordic,Finnish and Swedish
-FR,France,Western Europe,Romance,Big Five,
-GB,United Kingdom,Northern Europe,Germanic,Big Five,
+ES,Spain,Southern Europe,Romance,Mediterranean,
+FI,Finland,Northern Europe,Uralic;Germanic,Nordic,Finnish and Swedish
+FR,France,Western Europe,Romance,Western,
+GB,United Kingdom,Northern Europe,Germanic,Western,
 GE,Georgia,Western Asia,Kartvelian,Caucasus,
 GR,Greece,Southern Europe,Greek,Mediterranean,
 HR,Croatia,Southern Europe,Slavic,Balkan,
 HU,Hungary,Eastern Europe,Uralic,Eastern,
-IE,Ireland,Northern Europe,Germanic,Western,English and Irish
+IE,Ireland,Northern Europe,Germanic;Celtic,Western,English and Irish
 IL,Israel,Western Asia,Semitic,Other,
 IS,Iceland,Northern Europe,Germanic,Nordic,
-IT,Italy,Southern Europe,Romance,Big Five,
+IT,Italy,Southern Europe,Romance,Mediterranean,
 LT,Lithuania,Northern Europe,Baltic,Baltic,
 LU,Luxembourg,Western Europe,Germanic;Romance,Western,Returned in 2024
 LV,Latvia,Northern Europe,Baltic,Baltic,
 MD,Moldova,Eastern Europe,Romance,Eastern,Romanian
 ME,Montenegro,Southern Europe,Slavic,Balkan,Voter only in this period
 MK,North Macedonia,Southern Europe,Slavic,Balkan,
-MT,Malta,Southern Europe,Semitic;Romance,Mediterranean,Maltese and English
+MT,Malta,Southern Europe,Semitic;Germanic,Mediterranean,Maltese and English
 NL,Netherlands,Western Europe,Germanic,Western,
 NO,Norway,Northern Europe,Germanic,Nordic,
 PL,Poland,Eastern Europe,Slavic,Eastern,

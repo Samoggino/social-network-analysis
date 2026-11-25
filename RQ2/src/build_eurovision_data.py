@@ -119,10 +119,10 @@ def main() -> None:
             validate(year, countries, votes[key], finalists)
             write_matrix(OUT_DIR / f"{year}_{layer}.csv", countries, votes[key], finalists)
         total_voters += len(countries)
-        total_opportunities += len(countries) * (len(finalists) - 1) * 2
+        total_opportunities += 2 * (len(countries) * len(finalists) - len(finalists))
         print(f"{year}: {len(countries)} voters, {len(finalists)} finalists, matrices written")
     print(f"Voters summed over years: {total_voters}")
-    print(f"Opportunities (both layers): {total_opportunities * 2}")
+    print(f"Opportunities (both layers): {total_opportunities}")
     print(f"Output: {OUT_DIR}")
 
 

@@ -88,6 +88,7 @@ def cross_region_stats(
     points_same = 0
     points_other = 0
     slots_expected = 0.0
+    points_expected = 0.0
     voters_count = 0
 
     for voter in voters:
@@ -108,10 +109,12 @@ def cross_region_stats(
             if voter_languages & attributes.get(target, {}).get("language_groups", set())
         }
         cross_choices = 0
+        cross_points = 0
         for _, target, data in graph.out_edges(voter, data=True):
             if target not in eligible:
                 continue
             cross_choices += 1
+            cross_points += data["weight"]
             if target in shared:
                 chosen_same += 1
                 points_same += data["weight"]
@@ -119,22 +122,26 @@ def cross_region_stats(
                 chosen_other += 1
                 points_other += data["weight"]
 
-        # The observed share pools the choices of all voters, so the benchmark
-        # weights each voter by the number of its cross-region choices.
+        # The pooled observed quantities require consistent voter weights.
         slots_expected += cross_choices * len(shared) / len(eligible)
+        points_expected += cross_points * len(shared) / len(eligible)
 
     slots_total = chosen_same + chosen_other
     expected = slots_expected / slots_total if slots_total else float("nan")
+
+    total_points = points_same + points_other
+    expected_points = points_expected / total_points if total_points else float("nan")
 
     return {
         "voters": voters_count,
         "share_slots": chosen_same / slots_total if slots_total else float("nan"),
         "share_slots_expected": expected,
+        "share_points_expected": expected_points,
         "slots_excess": (chosen_same / slots_total / expected) if slots_total and expected else float("nan"),
         "share_points": points_same / (points_same + points_other)
         if (points_same + points_other) else float("nan"),
-        "points_excess": (points_same / (points_same + points_other) / expected)
-        if (points_same + points_other) and expected else float("nan"),
+        "points_excess": (points_same / total_points / expected_points)
+        if total_points and expected_points else float("nan"),
         "points_same_when_chosen": points_same / chosen_same if chosen_same else float("nan"),
         "points_other_when_chosen": points_other / chosen_other if chosen_other else float("nan"),
         "points_gap": (points_same / chosen_same - points_other / chosen_other)
@@ -160,11 +167,14 @@ def plot_within(rows: list[dict]) -> None:
                 label=f"{layer.title()} observed",
             )
 
-        expected = [index[(y, "jury")]["share_slots_expected"] for y in YEARS]
-        ax.plot(
-            positions, expected, color="#3b3b3b", linestyle="--", marker="D",
-            markersize=4, linewidth=1.2, label="Expected, same-region pairs excluded",
-        )
+        expected_key = "share_slots_expected" if key == "share_slots" else "share_points_expected"
+        for offset, layer in zip((-0.15, 0.15), LAYERS):
+            expected = [index[(y, layer)][expected_key] for y in YEARS]
+            ax.plot(
+                positions + offset, expected, linestyle="--", marker="D",
+                color=colors[layer], markersize=3, linewidth=1.1,
+                alpha=0.65, label=f"{layer.title()} expected",
+            )
         ax.set_xticks(positions, YEARS, rotation=45)
         ax.set_title(title)
         ax.set_ylabel(ylabel)
@@ -191,7 +201,7 @@ def main() -> None:
 
     columns = [
         "year", "layer", "voters", "share_slots", "share_slots_expected", "slots_excess",
-        "share_points", "points_excess", "points_same_when_chosen",
+        "share_points", "share_points_expected", "points_excess", "points_same_when_chosen",
         "points_other_when_chosen", "points_gap",
     ]
     save_csv(
@@ -225,28 +235,26 @@ def main() -> None:
         ],
     )
 
-    # Is the excess itself real? Exact paired test over the editions of the
-    # observed share against the expected one, separately for each layer.
+    # Paired annual deviations vs the opportunity benchmark; descriptive/inferential
+    # subject to exchangeability/sign-symmetry assumptions. Not a ballot randomisation.
     excess_tests = []
     for layer in LAYERS:
-        rows = [row for row in summary if row["layer"] == layer]
-        expected = [row["share_slots_expected"] for row in rows]
-        for key, label in (("share_slots", "scelte"), ("share_points", "punti")):
-            observed = [row[key] for row in rows]
+        subset = [r for r in summary if r["layer"] == layer]
+        for key, benchmark, label in (
+            ("share_slots", "share_slots_expected", "scelte"),
+            ("share_points", "share_points_expected", "punti"),
+        ):
+            observed = [r[key] for r in subset]
+            expected = [r[benchmark] for r in subset]
             difference, p = sign_flip_test(expected, observed)
-            excess_tests.append((
-                layer, label, float(np.mean(observed)), float(np.mean(expected)), difference,
-                sum(o > e for o, e in zip(observed, expected)), p,
-            ))
-    excess_raw = [t[-1] for t in excess_tests]
+            excess_tests.append((layer, label, float(np.mean(observed)),
+                                 float(np.mean(expected)), difference,
+                                 sum(o > e for o, e in zip(observed, expected)), p))
+    raw = [t[-1] for t in excess_tests]
     save_csv(
         RESULTS_DIR / "rq2_language_within_excess.csv",
-        ["layer", "quota", "osservato", "atteso", "differenza", "anni_sopra_atteso",
-         "p_esatto", "p_holm", "p_fdr"],
-        [
-            test + (ph, pb)
-            for test, ph, pb in zip(excess_tests, holm(excess_raw), benjamini_hochberg(excess_raw))
-        ],
+        ["layer", "quota", "osservato", "atteso", "differenza", "anni_sopra_atteso", "p_esatto", "p_holm", "p_fdr"],
+        [t + (ph, pb) for t, ph, pb in zip(excess_tests, holm(raw), benjamini_hochberg(raw))],
     )
 
     plot_within(summary)

@@ -1,123 +1,72 @@
-# RQ4 — Somiglianza dei Layer e Stabilità Temporale
+# RQ4 · Accordo fra giurie e televoto e stabilità temporale
 
-**Domanda di ricerca.** Giurie e televoto esprimono strutture di voto simili nella stessa edizione? E quanto è stabile la stessa struttura (giurie o televoto) tra edizioni consecutive?
+La RQ4 chiede quanto si assomiglino i voti delle giurie e del televoto nazionale nella stessa finale e quanto ciascun sistema mantenga la propria struttura di voto fra finali consecutive. I lag superiori a uno descrivono confronti a distanza maggiore.
 
-## Dati e convenzioni
+## Dati e confronti
 
-- 10 edizioni: Grand Final 2016–2026 (2020 cancellata), layer *jury* e *public* mantenuti separati, WLD escluso.
-- Matrici di input: `../RQ1/processed_data/matrices/` (identiche a quelle usate da RQ1, RQ2, RQ3). `W[i, j]` = punti dal votante *i* al finalista *j*; cella vuota = voto impossibile; 0 = voto ammissibile senza punti.
-- Le maschere di eleggibilità sono **identiche tra i due layer in ogni edizione** (850–1092 celle per anno). Il codice verifica l'intersezione invece di assumere l'identità.
+- Dieci Grand Final dal 2016 al 2026. Il 2020, anno senza concorso, è assente. I lag contano le edizioni e il passaggio 2019–2021 vale uno.
+- Le 20 matrici annuali provengono da `../RQ1/processed_data/matrices/`. La RQ4 usa le matrici, indipendentemente dai risultati delle altre domande. Un valore vuoto indica un voto inammissibile. Lo zero indica una diade ammissibile che non ha ricevuto punti.
+- Il voto *Rest of the World* (`WLD`) è escluso per confrontare i due sistemi sui votanti nazionali. Dal 2023 vale un set aggiuntivo da 58 punti. [Regolamento Eurovision](https://www.eurovision.com/newsroom/rules-of-the-contest/)
+- Una diade è una coppia diretta votante–destinatario. I confronti usano l'intersezione delle diadi ammissibili. Nel tempo si allineano prima i Paesi comuni e si confrontano giurie e televoto sulle stesse celle per ogni coppia di edizioni.
 
-Due distinzioni metodologiche guidano tutta l'analisi:
+## Statistiche e test
 
-1. **Celle comuni**. Un confronto entra solo nelle diadi che sono voti ammissibili in *entrambe* le reti confrontate. Nelle matrici Eurovision l'eleggibilità coincide tra jury e public dello stesso anno, ma lo script non lo dà per scontato.
-2. **QAP**. La correlazione tra due reti che condividono i nodi non è un campione di diadi indipendenti: righe e colonne sono gli stessi paesi, quindi la dimensione campionaria effettiva è molto minore del numero di celle. I p-value sono calcolati permutando le etichette dei paesi di una rete (righe e colonne insieme) e ricalcolando la statistica sulle celle che restano ammissibili in entrambe. La statistica osservata è calcolata nello stesso modo, sull'intersezione delle due maschere, così che valori osservati e permutati siano confrontabili. Questa è la procedura di Quadratic Assignment nominata nella proposta.
+**Metrica primaria.** Per ciascuna delle due reti confrontate si stimano, per minimi quadrati sulle sole celle comuni, intercetta ed effetti fissi additivi di votante e di destinatario. Il Pearson dei due vettori di residui misura l'accordo dopo questo aggiustamento. Il codice costruisce con una SVD una base ortonormale del disegno, che include l'intercetta, e riusa la proiezione quando la maschera rimane fissa. La stima preserva gli zeri ammissibili e lascia fuori le celle inammissibili. La metrica è indefinita se uno dei vettori di residui non ha variabilità.
 
-## Metodi
+**Metriche complementari.** Spearman con ranghi medi e Pearson grezzo usano tutte le diadi comuni. Jaccard misura la quota di diadi premiate da entrambi fra quelle premiate da almeno uno. Nella stessa edizione si riporta anche Spearman sulle diadi premiate da entrambi, un sottoinsieme selezionato dai punteggi stessi.
 
-### 1. Somiglianza tra layer (stesso anno) — `analyze_rq4_layer_similarity.py`
+**QAP nella stessa finale.** Si permutano insieme righe e colonne del televoto entro i due gruppi di Paesi, finalisti e non finalisti. La giuria rimane fissa. Si verifica a ogni replica che l'eleggibilità resti identica, cella per cella. La permutazione conserva ciascuna scheda come insieme di punti e il profilo dei punti ricevuti dai finalisti a meno dell'etichetta. Il test valuta l'accordo con le identità osservate rispetto a questo riferimento condizionato al ruolo.
 
-Per ogni edizione le due reti sono confrontate sulle diadi ammissibili in entrambe. Quattro quantità:
+**QAP temporale congiunto.** Ogni replica estrae una permutazione per finale, indipendentemente fra finali, con gli stessi vincoli e controlli. Si usa la stessa permutazione per giurie e televoto di quella finale e la si riutilizza in tutte le coppie che la comprendono. Il nullo conserva la struttura congiunta annuale dei voti e tiene conto delle edizioni condivise fra coppie. Conservando ciascuna maschera annuale, conserva anche la sua intersezione con ogni altra maschera. La statistica di ogni layer è la media a pesi uguali sulle nove coppie consecutive. Per il divario si sottraggono le due medie **nella stessa replica**. Il nullo ipotizza che, dati vincoli e schede annuali, le etichette dei Paesi siano scambiabili entro ruolo e indipendentemente per edizione. Il test del divario valuta la compatibilità con questo riferimento. L'uguaglianza della stabilità fra due processi che possono entrambi essere persistenti è un'ipotesi diversa.
 
-| Statistic | Descrizione |
-|---|---|
-| `spearman` | Correlazione di Spearman dei punti su tutte le diadi comuni. Attenzione: circa metà delle celle ammissibili sono zeri in entrambi i layer, e l'accordo sugli zeri la gonfia. |
-| `pearson` | Correlazione di Pearson sugli stessi punti, per confronto. |
-| `residual_pearson` | Correlazione di Pearson dopo aver rimosso gli effetti di livello votante e destinatario. Il residuo di una cella è i suoi punti meno la media del suo votante, meno la media del suo destinatario, più la media globale, tutto calcolato sulle celle mascherate. Ciò che resta è la parte dello scambio non spiegata da quanto è generoso il votante o da quanto è popolare il destinatario, ovvero l'allineamento delle coppie effettive. Se i layer concordassero solo su quali paesi sono popolari, questa correlazione sarebbe vicina a zero mentre quella grezza resterebbe alta. |
-| `jaccard` | Indice di Jaccard tra i due insiemi di diadi positive (entrambi i layer danno punti > 0), ignorando l'entità dei punteggi. |
+**Code e correzioni.** Per entrambi i nulli si usano 9.999 repliche e p-value bilaterali calcolati come il doppio della coda empirica minore, troncato a uno. In ciascuna coda si aggiunge uno al conteggio e al denominatore. Il minimo p grezzo è 0,0002. Holm è applicata separatamente alla famiglia dei dieci confronti nella stessa edizione e a quella dei tre test temporali al lag 1 (giurie, televoto, divario). Gli altri indicatori, i lag 2–9 e i controlli di robustezza sono descrittivi. I quantili 2,5% e 97,5% descrivono le simulazioni del nullo.
 
-Una quinta quantità è calcolata ma secondaria: `spearman_both_positive`, la correlazione di Spearman ristretta alle diadi dove *entrambi* i layer hanno dato punti. Risponde a "quando entrambi concordano che c'è uno scambio, concordano sulla sua entità?", su un sottoinsieme molto più piccolo e non casuale.
-
-Tutti i p-value sono QAP: le etichette dei paesi di un layer sono permutate (righe e colonne insieme), 1000 volte, e la statistica è ricalcolata sulle celle che restano ammissibili in entrambe le reti.
-
-### 2. Stabilità temporale (stesso layer, edizioni diverse) — `analyze_rq4_temporal_stability.py`
-
-La stessa rete è messa a confronto con se stessa in edizioni diverse. Per ogni lag da 1 a 9 edizioni, le due reti sono allineate sui paesi presenti in entrambe, e il confronto è calcolato sulle diadi che erano voti ammissibili in entrambe le edizioni. Il lag è misurato in edizioni e non in anni: 2020 manca, quindi un lag di 1 è sempre l'edizione successiva (2019 → 2021 compreso).
-
-Le stesse quattro statistiche (`spearman`, `pearson`, `residual_pearson`, `jaccard`) sono calcolate per ogni coppia di edizioni. La statistica riportata per un lag è la media sulle coppie con quel lag. Il suo p-value deriva da un nullo che permuta le etichette dei paesi di un anno indipendentemente dentro ogni coppia e poi media nello stesso modo: il nullo si riferisce quindi alla statistica media, non a una singola coppia.
-
-Il confronto lag-1 tra jury e public è testato con il test esatto *sign-flip* accoppiato sulle 9 coppie consecutive di edizioni: dentro ogni coppia si scambiano i due layer e si guarda quanti dei 2⁹ = 512 scambi producono una differenza almeno tanto grande quanto l'osservata.
-
-**Relazione con RQ1**. RQ1 misura la persistenza di coppie reciproche individuali e di configurazioni triadiche con un modello temporale nullo (MCMC edge-swap per rete). L'unità qui è diversa: matrici intere, pesate, con effetti di votante e destinatario rimossi. Le due analisi rispondono a domande diverse e vanno lette insieme.
+**Robustezza.** Si ripete il confronto al lag 1 sulle sole diadi ammissibili in tutte le edizioni. Si ricalcola inoltre la media escludendo ogni finale a turno e rimuovendo tutte le coppie che la coinvolgono. La procedura non crea nuovi abbinamenti. Queste analisi misurano la sensibilità al campione di diadi e alle singole edizioni.
 
 ## Risultati
 
-### Somiglianza tra layer (stesso anno)
+### Accordo nella stessa edizione
 
-| Statistic | Media 10 edizioni | Min | Max | Nullo (media) | q95 nullo | Significative (p<0.05) |
-|---|---:|---:|---:|---:|---:|---:|
-| Spearman | 0.311 | 0.181 | 0.468 | −0.002 | 0.200 | 10/10 |
-| Pearson | 0.329 | 0.191 | 0.475 | −0.001 | 0.205 | 10/10 |
-| Residual Pearson | 0.241 | 0.167 | 0.314 | +0.000 | 0.083 | 10/10 |
-| Jaccard | 0.384 | 0.323 | 0.471 | 0.249 | 0.349 | 10/10 |
-| Spearman (entrambi > 0) | 0.191 | 0.064 | 0.351 | — | — | 3/10 |
+Su dieci finali, il Pearson dei residui va da **0,167 a 0,313** e ha media **0,2413**. Tutti e dieci i confronti annuali hanno **p grezzo = 0,0002** e **p Holm = 0,0020** sotto il QAP entro ruolo. Il valore grezzo raggiunge il limite di risoluzione Monte Carlo. Su tutte le diadi, Spearman, Pearson grezzo e Jaccard medi sono rispettivamente **0,311**, **0,329** e **0,384**. Sulle diadi premiate da entrambi, lo Spearman medio è **0,191**.
 
-- La correlazione grezza (Spearman/Pearson ~0.3) è significativa in tutti e 10 gli anni contro il nullo QAP, ma è in parte guidata dall'accordo su quali paesi sono popolari.
-- La **residual Pearson (0.241)** rimuove esattamente quell'effetto e resta significativa 10/10, con un nullo molto più stretto (q95 0.083). L'allineamento delle coppie *reali* è quindi reale e non si riduce a "entrambi votano gli stessi paesi popolari".
-- **Jaccard (0.384)** è ben sopra il nullo (0.249), confermando che gli stessi *tipi* di scambi (chi vota chi) ricorrono nei due layer.
-- La correlazione ristretta alle diadi dove entrambi danno punti (Spearman 0.191, solo 3/10 significative) dice che quando entrambi concordano che c'è uno scambio, l'entità dei punti è poco allineata.
+### Stabilità tra edizioni consecutive
 
-### Stabilità temporale (stesso layer, edizioni diverse)
+| Statistica | Giurie | Televoto | Differenza | Coppie con televoto più alto |
+|---|---:|---:|---:|---:|
+| Pearson dei residui | 0,1178 | 0,4717 | +0,3539 | 9/9 |
+| Spearman | 0,0989 | 0,2634 | +0,1646 | 9/9 |
+| Pearson grezzo | 0,1141 | 0,3187 | +0,2045 | 9/9 |
+| Jaccard | 0,2918 | 0,3590 | +0,0672 | 8/9 |
 
-| Layer | Lag | Coppie | Spearman medio | Nullo medio | q95 nullo | p | Residual Pearson medio | Jaccard medio |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Jury | 1 | 9 | 0.099 | 0.002 | 0.087 | 0.024 | 0.118 | 0.292 |
-| Public | 1 | 9 | 0.263 | 0.002 | 0.109 | 0.002 | 0.471 | 0.359 |
-| Jury | 2 | 8 | 0.144 | −0.001 | 0.092 | 0.006 | 0.119 | 0.320 |
-| Public | 2 | 8 | 0.270 | 0.006 | 0.136 | 0.002 | 0.462 | 0.354 |
-| Jury | 3 | 7 | 0.171 | 0.001 | 0.097 | 0.002 | 0.104 | 0.325 |
-| Public | 3 | 7 | 0.341 | 0.000 | 0.133 | 0.002 | 0.434 | 0.397 |
-| Jury | 4 | 6 | 0.148 | −0.002 | 0.104 | 0.006 | 0.069 | 0.310 |
-| Public | 4 | 6 | 0.243 | −0.010 | 0.162 | 0.006 | 0.430 | 0.352 |
-| Jury | 5 | 5 | 0.167 | 0.001 | 0.096 | 0.004 | 0.088 | 0.318 |
-| Public | 5 | 5 | 0.246 | 0.001 | 0.157 | 0.004 | 0.409 | 0.349 |
-| Jury | 6 | 4 | 0.159 | 0.002 | 0.127 | 0.016 | 0.098 | 0.327 |
-| Public | 6 | 4 | 0.261 | −0.001 | 0.176 | 0.004 | 0.402 | 0.346 |
-| Jury | 7 | 3 | 0.083 | −0.005 | 0.116 | 0.154 | 0.081 | 0.296 |
-| Public | 7 | 3 | 0.243 | 0.001 | 0.202 | 0.014 | 0.424 | 0.336 |
-| Jury | 8 | 2 | 0.173 | −0.001 | 0.134 | 0.016 | 0.178 | 0.337 |
-| Public | 8 | 2 | 0.387 | −0.004 | 0.271 | 0.004 | 0.440 | 0.415 |
-| Jury | 9 | 1 | 0.210 | 0.001 | 0.220 | 0.056 | 0.137 | 0.329 |
-| Public | 9 | 1 | 0.322 | 0.006 | 0.335 | 0.042 | 0.375 | 0.349 |
+Le due medie residue e il divario sono superiori a quanto atteso sotto il riferimento di scambiabilità delle identità fra edizioni (**p grezzo = 0,0002 e p Holm = 0,0006** per ciascuno dei tre test). Per il divario, i quantili centrali del nullo vanno da **−0,0362 a +0,0366**. Il risultato di **+0,3539** documenta un vantaggio del televoto nelle finali analizzate ed è incompatibile con questo nullo. I lag da 2 a 9 hanno da otto a una coppia e le loro curve descrivono l'andamento osservato senza un test di decadimento.
 
-- **Il televoto è più stabile delle giurie su tutti e tre gli indicatori chiave.** Al lag 1:
-  - Spearman: public 0.263 vs jury 0.099, differenza +0.165, 9/9 coppie, p = 0.0039 (Holm 0.0117)
-  - Residual Pearson: public 0.471 vs jury 0.118, differenza +0.353, 9/9, p = 0.0039 (Holm 0.0117)
-  - Jaccard: public 0.359 vs jury 0.292, differenza +0.067, 8/9, p = 0.0117 (Holm 0.0117)
-- La stabilità **non decade** in modo monotono: la residual Pearson resta tra 0.07 e 0.18 per le giurie e tra 0.38 e 0.47 per il televoto a tutti i lag, e sulla residual Pearson entrambi i layer sono significativi in **tutti e 9 i lag**. La Spearman grezza è più rumorosa: significativa in 7/9 lag per le giurie (lag 7, p = 0.154, e lag 9, p = 0.056) e in 9/9 per il televoto.
-- Al lag 1 le diadi comuni vanno da 496 (2025–2026) a 741 (2016–2017), con media 680; per i lag da 2 a 9 la media scende a 549–622. La dimensione campionaria effettiva è comunque limitata dalla struttura delle eleggibilità.
+### Robustezza
 
-## Limitazioni
+Sulle **130 diadi sempre ammissibili**, tra **27 votanti** e **5 destinatari**, il divario del Pearson residuo è **+0,3464** e il televoto resta più alto in **9 coppie su 9**. Per Jaccard il divario scende invece a **+0,0074** e il televoto prevale in **5 coppie su 9**. Escludendo una finale alla volta, il divario del Pearson residuo resta fra **+0,3182 e +0,3743**, su sette o otto coppie. La robustezza riguarda soprattutto la concordanza dei punteggi dopo l'aggiustamento additivo. La sovrapposizione delle sole diadi positive è più sensibile alla composizione dei finalisti.
 
-- **QAP con zeri strutturali.** La permutazione cambia l'insieme delle diadi comuni oltre all'accoppiamento, il che è il nullo corretto per reti con zeri strutturali, ma rende la distribuzione nulla dipendente dalla geometria delle maschere.
-- **Effetti residui.** La residualizzazione rimuove gli effetti di livello votante e destinatario in modo lineare (due-vie centering). Interazioni non lineari o effetti di ordine superiore non sono catturati.
-- **Esclusione del WLD.** Dal 2023 metà del voto pubblico è *Rest of the World*; escludere il WLD lascia la metà nazionale. La stabilità del layer public è quindi misurata sulla parte collegata ai paesi, e le conclusioni valgono per quella parte.
-- **Allineamento sui paesi comuni.** Nel confronto temporale si allineano solo i paesi presenti in entrambe le edizioni. Paesi che entrano/escono dall'insieme dei finalisti non contribuiscono alla stabilità; questo è corretto per la domanda posta ma riduce il campione ai lag maggiori.
-- **Coppie consecutive non indipendenti.** Il confronto jury vs public al lag 1 usa 9 coppie di edizioni, ma ogni edizione intermedia compare in due coppie, quindi le 9 differenze non sono indipendenti e il p del sign-flip è un po' ottimista. Il risultato resta netto (9/9 coppie per Spearman e residual Pearson).
-- **Nessuna inferenza causale.** La stabilità osservata è descrittiva: non dice *perché* il pattern persiste (geografia, cultura, qualità della canzone, inerzia del voto).
+## Limiti
 
-## Output
+Il QAP controlla il ruolo e l'eleggibilità. La scambiabilità delle etichette è un'assunzione del modello: il riferimento non fissa la popolarità di ciascun Paese né le affinità geografiche. Gli effetti fissi assorbono i livelli additivi di chi vota e chi riceve punti sulle celle confrontate. Interazioni e altre strutture del voto possono contribuire ai residui. Il sottoinsieme di diadi sempre ammissibili privilegia Paesi presenti e finalisti con continuità. L'analisi riguarda le finali osservate e non attribuisce cause alle regolarità del voto.
 
-`results/rq4/`:
+## Riproduzione e file
 
-- `rq4_layer_similarity.csv`: per edizione, celle comuni, entrambe > 0, le 4 statistiche + null mean, q025, q975, p-value QAP, più `spearman_both_positive`.
-- `rq4_temporal_stability.csv`: per layer, lag, statistica, coppie, media osservata, null mean, q025, q975, p-value.
-- `rq4_temporal_pairs.csv`: per layer, lag, year_a, year_b, celle comuni, le 4 statistiche per ogni coppia di edizioni.
-- `rq4_temporal_layer_diff.csv`: confronto jury vs public al lag 1 (paired sign-flip test su 9 coppie), con p exact, Holm, FDR.
-
-`figures/rq4/`:
-
-- `rq4_layer_similarity.png`: tre pannelli — Spearman e residual Pearson per anno con bande QAP; Jaccard per anno con banda QAP; mappa di calore log-counts jury vs public per l'ultima edizione (2026).
-- `rq4_temporal_stability.png`: tre pannelli — Spearman per lag per layer con bande QAP; residual Pearson per lag per layer con bande QAP; due heatmap Spearman tra tutte le coppie di edizioni (jury a sinistra, public a destra).
-
-## Riproduzione
-
-Requisiti: Python con `numpy`, `matplotlib` (nessuna dipendenza pesante, niente scipy).
+Dalla cartella `RQ4`, con Python 3.12 nell'ambiente di riferimento:
 
 ```bash
-cd RQ4
-python src/analyze_rq4_layer_similarity.py      # ~5 secondi
-python src/analyze_rq4_temporal_stability.py    # ~18 secondi
+python -m pip install -r requirements.txt
+python -B -m unittest discover -s tests -v
+python -B run_all.py
 ```
 
-Gli script non hanno opzioni da riga di comando: seed, numero di permutazioni e lag massimo sono costanti in cima al file (`SEED`, `N_PERM`, `MAX_LAG`). Entrambi arrotondano i CSV a 10 decimali e sono **byte-identici** su esecuzioni consecutive.
+Per una copia separata, aggiungere `--matrices "percorso/alle/matrici"`. L'opzione `--output-dir` cambia la radice degli output. I default sono 9.999 permutazioni e semi 42 per l'analisi annuale e 43 per quella temporale. In `run_all.py`, `--seed` imposta il primo seme e il secondo è quello successivo. Gli script originari restano eseguibili anche singolarmente e accettano gli stessi parametri, con il rispettivo seme predefinito. Usare `run_all.py` per generare anche il registro completo.
+
+| File in `results/rq4/` | Contenuto |
+|---|---|
+| `rq4_layer_similarity.csv` | Accordo per edizione e test primario annuale |
+| `rq4_temporal_pairs.csv` | Statistiche osservate e copertura per coppia e layer |
+| `rq4_temporal_stability.csv` | Medie per lag e test primari al lag 1 |
+| `rq4_temporal_layer_diff.csv` | Divario osservato al lag 1 e test del divario sotto il nullo congiunto |
+| `rq4_robustness.csv` | Diadi fisse ed esclusione di ogni finale, con copertura e variazione rispetto alla stima principale |
+| `rq4_run_config.json` | Versioni, semi, repliche, famiglie di test e SHA-256 delle 20 matrici |
+
+Le celle inferenziali vuote nei CSV corrispondono a statistiche descrittive. Le figure in `figures/rq4/` mostrano l'accordo annuale e l'andamento per lag, con scale che rappresentano anche le correlazioni negative fra edizioni.
