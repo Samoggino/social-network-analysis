@@ -22,7 +22,11 @@ for fig in strong reciprocal; do
       -background white -gravity north -splice 0x140 -font $FONT -pointsize 80 -fill black \
       -annotate +0+25 "$title" "_${fig}_${layer}.png"
   done
-  magick "_${fig}_jury.png" "_${fig}_public.png" -gravity center -background white +append +repage "_${fig}_pair.png"
+  # Vertical rule between the jury and televote panels, as tall as the taller one.
+  h=$(magick "_${fig}_jury.png" "_${fig}_public.png" -format '%h\n' info: | sort -n | tail -1)
+  magick -size "80x${h}" xc:white -fill '#9a9a9a' -draw "rectangle 37,40 42,$((h - 20))" "_${fig}_sep.png"
+  magick "_${fig}_jury.png" "_${fig}_sep.png" "_${fig}_public.png" -gravity center -background white +append +repage "_${fig}_pair.png"
+  rm "_${fig}_sep.png"
   # The legend follows the width of the panels, never the other way round.
   width=$(magick identify -format %w "_${fig}_pair.png")
   magick "_${fig}_pair.png" \( legend.png -resize "${width}x>" \) -gravity center -background white -append \
