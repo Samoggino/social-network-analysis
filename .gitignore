@@ -33,6 +33,11 @@ build/
 # Student ID numbers and the submission PDF stay local (public repository)
 matricole.tex
 RELAZIONE-consegna.pdf
+Botrugno and Fabrizio and Musa and Samoggia.pdf
+
+# Italian translation of the report, kept locally only
+RELAZIONE_IT.tex
+RELAZIONE_IT.pdf
 
 # Internal planning documents, kept locally only (public repository)
 docs/L_Eurovision Song Contest (ESC).docx

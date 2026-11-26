@@ -6,6 +6,9 @@
 
 \usepackage[a4paper,margin=1in]{geometry}
 \setlength\parindent{0pt}
+\emergencystretch=2em
+\clubpenalty=10000
+\widowpenalty=10000
 
 \usepackage{mathptmx}
 \usepackage{amsmath,amssymb}
@@ -21,14 +24,15 @@
 \graphicspath{{RQ1/figures/rq1/}{RQ2/figures/rq2/}{RQ3/figures/rq3/}{RQ4/figures/rq4/}{RQ5/figures/rq5/}{output/gephi/report/}}
 \usepackage{booktabs}
 \usepackage{float}
+\usepackage[section]{placeins} % Keep figures within their sections.
 \usepackage{caption}
+% Figure captions are smaller than the main text.
+\captionsetup[figure]{font=footnotesize,labelfont=bf,skip=6pt}
 \usepackage{hyperref}
 \usepackage{url}
 
-% Numeri di matricola: NON versionati, il repository e' pubblico.
-% Stanno in matricole.tex (ignorato da git) e compaiono solo nella versione
-% di consegna:
-%   latexmk -pdf -jobname=RELAZIONE-consegna -usepretex='\def\consegna{}' RELAZIONE.TEX
+% Student IDs are stored separately in matricole.tex and are omitted from the public version.
+% Define \consegna and provide matricole.tex to include student IDs in the submission.
 \ifdefined\consegna
   \input{matricole.tex}
 \else
@@ -40,10 +44,8 @@
 % ============================================
 
 \title{
-Does Structure Predict?\\
-A Social Network Analysis of Jury and Televote
-Voting in the Eurovision Song Contest,
-2016--2026
+Jury and Televote in the Eurovision Song Contest:\\
+Structure, Stability and Prediction
 }
 
 \author{
@@ -77,34 +79,26 @@ Simone Samoggia, Laurea Magistrale in Informatica
 
 The Eurovision Song Contest (ESC) is an annual international
 music competition in which participating countries award
-points to songs representing other nations. Beyond its
-musical dimension, the contest provides an interesting
-setting for studying collective preferences and recurring
-voting patterns. Previous research has identified
-geographical, cultural, and political influences on voting
-behaviour, suggesting that the distribution of points may
-reflect more than musical preferences alone
-\cite{ginsburgh2008}.
+points to songs representing other nations. Previous research examined
+vote trading and found associations with linguistic and cultural
+proximity \cite{ginsburgh2008}.
 
 From a Social Network Analysis (SNA) perspective,
 Eurovision can be represented as a directed, weighted
 network in which countries are nodes and voting
 relationships are edges. An edge from country $i$ to
-country $j$ represents the points awarded by $i$ to $j$.
+country $j$ indicates a vote from $i$ to $j$, with
+the edge weight equal to the awarded points.
 This representation makes it possible to investigate
 structural properties such as reciprocity, transitivity,
-community formation, centrality, and the persistence
+community formation, recipient prestige, and the persistence
 of voting relationships over time.
 
 Since 2016, jury and public votes have been reported
 separately, providing two comparable voting networks
 for each edition. This study analyses ten Grand Finals
 between 2016 and 2026, excluding the cancelled 2020
-edition, for a total of twenty networks. The two voting
-systems operate under comparable rules but may exhibit
-different structural patterns.
-
-The aim of this project is to examine how these
+edition, for a total of twenty networks. The aim of this project is to examine how voting
 patterns differ between juries and televoters, whether
 they persist across editions, and to what extent
 historical voting relationships and network structures
@@ -133,9 +127,9 @@ However, identifying such patterns does not necessarily
 mean that they are statistically meaningful or useful
 for predicting future voting behaviour.
 
-The main challenge is to distinguish genuine network
-structures from patterns that arise naturally from the
-contest's voting rules. Each country distributes a fixed
+The main challenge is to assess whether observed network
+patterns deviate from suitable null-model expectations
+under the contest's voting constraints. Each country distributes a fixed
 set of scores among eligible finalists, while some
 countries receive substantially more points than others.
 Consequently, observed reciprocity, clustering, or
@@ -159,7 +153,7 @@ research questions:
     exhibit different levels of within-group preference?
 
     \item \textbf{RQ3 -- Prestige, concentration,
-    and bridging:}
+    and geographical diversity:}
     How concentrated is voting support, and to what
     extent do successful countries receive support
     from within or beyond their geographical and
@@ -178,21 +172,12 @@ research questions:
     pairwise voting history?
 \end{itemize}
 
-These questions examine voting behaviour at different
-levels: local relationships and triadic structures,
-community formation, the distribution of support,
-temporal stability, and predictive performance.
-
 The project contributes to the study of voting networks
 by comparing two voting systems under similar rules,
 evaluating structural patterns against appropriate
 null models, and testing whether relationships
 identified in historical networks provide useful
 information for future predictions.
-
-Ultimately, the study aims to distinguish between
-network patterns that describe past voting behaviour
-and those that offer additional predictive value.
 
 
 
@@ -204,10 +189,11 @@ and those that offer additional predictive value.
 \label{datasets}
 
 
-The dataset used in this study comes from the public
-EurovisionAPI repository \cite{eurovisionapi}, which provides voting results
-for the Eurovision Song Contest in a machine-readable
-format. We analyse the Grand Finals from 2016 to 2026,
+The independent, unofficial EurovisionAPI dataset \cite{eurovisionapi}
+provides machine-readable voting records. We checked ballot
+completeness, the scoring scale and voter--recipient eligibility
+for internal consistency.
+We analyse the Grand Finals from 2016 to 2026,
 excluding 2020, when the contest was cancelled.
 For each of the ten editions, jury and televote results
 are considered separately, producing a total of
@@ -253,6 +239,23 @@ broad language-family classifications, and
 alternative cultural groupings. Multilingual
 countries may belong to more than one language
 family.
+Figure~\ref{fig:subregions} shows the geographical grouping
+used in the homophily and home-excess analyses.
+The colouring follows the UN M49 statistical subregions
+\cite{unm49}; these categories are analytical labels,
+not direct measures of cultural affinity.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.91\textwidth]{rq2_subregion_map.png}
+    \caption{UN M49 subregions assigned to the 45 countries
+    in the study (2016--2026). Grey areas fall outside
+    the analysed country set; Australia is shown in an inset.
+    Subregions follow UN M49 \cite{unm49}, with boundaries
+    from Natural Earth 1:50m \cite{naturalearth}.}
+    \label{fig:subregions}
+\end{figure}
+\FloatBarrier
 
 The original voting records are transformed into
 CSV adjacency matrices, accompanied by country
@@ -260,9 +263,9 @@ attributes and eligibility information. Data
 processing and analysis are performed in Python,
 using libraries including NumPy, NetworkX
 \cite{hagberg2008}, and Matplotlib; network
-figures are drawn with Gephi. The resulting datasets, scripts,
-and analytical outputs are publicly available in the
-project repository \cite{projectrepo} to support reproducibility.
+figures are drawn with Gephi \cite{bastian2009}. Code, outputs
+and supplementary diagnostics are available
+in the project repository \cite{projectrepo}.
 
 
 
@@ -308,9 +311,9 @@ on the constraints imposed by the voting system.
 Each ballot distributes a fixed number of points
 among eligible finalists, while recipients differ
 in popularity and voting opportunities.
-Appropriate null models are employed to distinguish
-observed patterns from structures that may arise
-mechanically under these constraints.
+Null models assess whether the observed patterns
+deviate from expectations under specified voting
+constraints.
 
 In particular, the analyses consider voting
 opportunities, recipient popularity, and temporal
@@ -333,16 +336,11 @@ random seeds and simulation settings.
 Automated checks and repeated executions are
 used to verify selected analyses and ensure
 consistency between computed results and their
-reported values. Nevertheless, reproducibility
-does not eliminate uncertainty arising from
-model assumptions or from the limited number
-of observed editions.
-
-In particular, the study includes ten contest
-editions, while predictive performance is
-evaluated on only four subsequent finals
-(2023--2026). This limits the generalisability
-of temporal and predictive findings.
+reported values. However, the study includes only ten contest
+editions, and predictive performance is
+evaluated on four subsequent finals
+(2023--2026). This limits the generalisability of the findings,
+particularly of the predictive comparisons.
 Accordingly, statistical conclusions are
 interpreted in relation to their specific null
 models, and descriptive evidence is distinguished
@@ -364,36 +362,25 @@ from broader inferential claims.
 \subsection{RQ1: Reciprocity, Transitivity and Persistence}
 \label{sec:rq1}
 
-The first research question investigates whether jury
-and televote networks differ in their local structural
-patterns and whether these relationships persist
-across editions.
+Table~\ref{tab:rq1_results} compares finalist subnetworks.
+\textit{Binary reciprocity} is the share of positive arcs with a positive
+reverse arc. \textit{High-score reciprocity} applies the same measure
+to arcs worth 10 or 12 points. \textit{Directed transitivity} is the
+share of two-step paths $i\to j\to k$ among distinct countries that have
+a positive closing arc $i\to k$. \textit{Weighted transitivity} averages
+$W_{ik}/12$ over those paths, weighted by the geometric mean of the
+weights of the two path arcs.
 
-We analyse \textit{reciprocity}, measuring the extent
-to which voting relationships are mutual, and
-\textit{transitivity}, measuring the tendency of
-directed two-paths to form closed triangles.
-Both binary and weighted configurations are
-considered, with particular attention to reciprocal
-exchanges of high scores (10 and 12 points).
-Temporal persistence is evaluated by examining how
-frequently eligible voting relationships and
-configurations recur across editions.
-
-To distinguish structural preferences from effects
-induced by recipient popularity and voting
-constraints, the observed differences are compared
-with appropriate null models. Multiple comparisons
-are adjusted using Holm's procedure.
-
-Table~\ref{tab:rq1_results} summarises the main
-annual results.
+The null preserves eligibility, each voter's ballot scores and each
+recipient's number of supporting voters within each voter role
+(finalist or non-finalist). Received point totals can vary.
+Holm adjusts the two-sided tests of mean annual layer differences
+across eleven metrics.
 
 \begin{table}[htbp]
     \centering
-    \caption{Mean structural measures across editions.
-    Adjusted p-values refer to the jury--televote
-    comparison against the corresponding null model.}
+    \caption{Mean structural measures for finalist subnetworks across editions.
+    Holm-adjusted $p$-values compare the layers against the null model.}
     \label{tab:rq1_results}
     \small
     \begin{tabular}{lccc}
@@ -408,40 +395,29 @@ annual results.
         High-score reciprocity
             & 0.136 & 0.214 & 0.027 \\
         Directed transitivity
-            & 0.532 & 0.646 & 0.720 \\
+            & 0.532 & 0.646 & 0.718 \\
         Weighted transitivity
             & 0.292 & 0.358 & 0.045 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-Binary reciprocity is nearly identical in the two
-layers, indicating no clear difference in the overall
-frequency of mutual voting. However, high-score
-reciprocity is substantially higher in the televote
-(0.214 versus 0.136), and the difference remains
-significant after controlling for popularity
-(Holm $p=0.027$).
+Binary reciprocity is similar in the two layers. High-score reciprocity
+is higher in the televote (0.214 versus 0.136), with a gap larger than
+the null predicts (Holm $p=0.027$). The directed transitivity difference
+falls within the null's central 95\% interval (Holm $p=0.718$).
+The weighted transitivity difference is positive and smaller than
+the null predicts (Holm $p=0.045$).
 
-Directed transitivity is also descriptively higher
-in the public network, but the null model explains
-most of this difference (Holm $p=0.720$).
-Weighted transitivity shows a significant deviation
-from the null expectation (Holm $p=0.045$),
-although the observed public advantage is smaller
-than expected under that reference model.
-
-Temporal analysis reveals stronger persistence in
-the televote. Fifteen reciprocal dyads appear in
-every eligible edition, compared with six in the
-jury networks. Similarly, 26 public dyads reach
-at least 75\% of their eligible opportunities,
-compared with 15 jury dyads. Repeated exchanges
-of high scores are also more frequent in the
-public layer. Figure~\ref{fig:rq1_reciprocal} maps
-these pairs: the persistent televote pairs form
-regional chains (Nordic, Baltic, Balkan and Eastern
-Mediterranean), while 10 of the 15 jury pairs
+Across editions, we track reciprocity among pairs eligible in at least
+three finals. Fifteen televote pairs and six jury pairs are reciprocal
+in every eligible edition. Twenty-six televote pairs and fifteen jury
+pairs are reciprocal in at least 75\% of their eligible editions.
+Nine televote pairs and three jury pairs exchange 10/12-point votes
+in both directions in at least two editions.
+Figure~\ref{fig:rq1_reciprocal} maps the pairs meeting the 75\% threshold.
+The persistent televote pairs form regional chains (Nordic, Baltic,
+Balkan and Eastern Mediterranean), while 10 of the 15 jury pairs
 cross subregions.
 
 \begin{figure}[htbp]
@@ -449,24 +425,28 @@ cross subregions.
     \includegraphics[width=\textwidth]
     {fig_reciprocal_ties.png}
     \caption{Pairs reciprocal in at least 75\% of
-    the finals in which both were eligible (Gephi,
-    ForceAtlas2). Ring colour: UN subregion; edge
-    width: share of mutual 10/12-point exchanges.}
+    eligible editions, requiring at least three eligible
+    editions (Gephi, ForceAtlas2). Ring colour shows the
+    UN subregion; edge width shows the fraction of eligible
+    editions with mutual 10/12-point exchanges, scaled
+    separately within each panel.}
     \label{fig:rq1_reciprocal}
 \end{figure}
 
-Figure~\ref{fig:rq1_temporal} compares the observed
-public--jury differences in temporal persistence
-with the distributions generated under the
-corresponding null model. In all three cases,
-the observed differences exceed the null
-expectations, indicating that the greater
-persistence of reciprocal relationships in
-the televote is not readily explained by
-the constraints represented in that model.
+We selected the three temporal metrics after inspecting the data.
+Figure~\ref{fig:rq1_temporal} compares the observed public--jury gaps
+with 400 histories simulated under the same annual constraints.
+All three observed gaps exceed their simulated counterparts, indicating
+greater televote persistence relative to this null. The minimum
+two-sided Monte Carlo $p$ is $1/401$. The Holm-adjusted $p\approx0.0075$
+for each exploratory comparison is the minimum attainable with
+400 simulations and three tests.
 
 
-\begin{figure}[htbp]
+\FloatBarrier
+% Keep Figure 3 together and immediately after its introductory paragraph.
+\par\medskip
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]
     {rq1_temporal_null_comparison.pdf}
@@ -477,53 +457,42 @@ the constraints represented in that model.
     while dashed lines indicate null-model means.
     The panels represent always-reciprocal dyads,
     dyads reciprocal in at least 75\% of eligible
-    editions, and repeated reciprocal high-score
-    exchanges, respectively.}
+    editions, and dyads exchanging 10/12-point votes in both directions
+    in at least two editions. All pairs require at least three
+    eligible editions.}
     \label{fig:rq1_temporal}
 \end{figure}
-
+\par\FloatBarrier\medskip
 
 Overall, jury and televote networks exhibit
 similar levels of binary reciprocity, but
 the public layer shows stronger high-score
 reciprocity and more persistent reciprocal
-relationships. Conversely, differences in
-triadic closure are largely explained by
-recipient popularity. These findings highlight
-the importance of evaluating observed
-network structures against null models
-that preserve relevant voting constraints.
-
+relationships. By contrast, the evidence for triadic closure is more
+nuanced: directed transitivity is not unusually different
+under its null model, while the weighted difference is
+smaller than the corresponding null expectation. 
 
 % RQ2 - Communities and homophily
 
 
+\FloatBarrier
+
 \subsection{RQ2: Communities and Homophily}
 
-The second research question examines whether voting
-networks exhibit communities corresponding to
-geographical or linguistic groups, and whether
-within-group preferences differ between juries
-and televoters.
+We apply Louvain \cite{blondel2008} to undirected projections with
+edge weights $W_{ij}+W_{ji}$ and construct consensus partitions from
+200 initialisations. The adjusted Rand index (ARI) \cite{hubert1985}
+measures agreement on whether country pairs cluster together or
+apart, corrected for chance. Normalised mutual information (NMI)
+\cite{danon2005} measures information shared by the partitions
+relative to their entropies. We compare communities with UN M49
+subregions and with one primary language-family label per country.
 
-Communities are identified using the Louvain
-algorithm \cite{blondel2008} on an undirected, weighted projection
-of each voting network. To account for stochastic
-variability, multiple runs are performed and
-consensus partitions are constructed. Their
-agreement with geographical subregions and
-language-family classifications is evaluated
-using the Adjusted Rand Index (ARI) and
-Normalized Mutual Information (NMI) \cite{danon2005}.
-
-We also measure geographical and linguistic
-homophily directly through voting relationships.
-For each voter, the observed proportion of
-within-group choices is compared with the
-proportion expected among eligible recipients.
-This opportunity-adjusted comparison prevents
-the composition of the finalist pool from being
-mistaken for a voting preference.
+Homophily compares the shares of choices and points going to the
+voter's group with its share of eligible recipients. We also compare
+mean points conditional on a recipient receiving points. Linguistic
+homophily uses any shared coded language family.
 
 \begin{table}[htbp]
 \centering
@@ -537,14 +506,14 @@ across the ten editions.}
 \midrule
 Same-subregion choices & 21.9\% & 25.1\% \\
 Same-subregion points & 23.3\% & 29.5\% \\
-Points per same-region choice & 6.16 & 6.86 \\
-Points per other-region choice & 5.70 & 5.46 \\
+Points per same-region choice & 6.16 & 6.85 \\
+Points per other-region choice & 5.69 & 5.46 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The televote exhibits stronger geographical homophily
-than the jury. On average, 25.1\% of public choices
+Table~\ref{tab:rq2_homophily} shows stronger geographical homophily
+in the televote. On average, 25.1\% of public choices
 remain within the voter's subregion, compared with
 21.9\% for juries and an opportunity-based expectation
 of approximately 18.7\%. The difference also
@@ -558,63 +527,7 @@ the geographical differences in both recipient
 selection and the intensity of awarded points
 across the ten editions.
 
-
-These differences concern both the selection of
-recipients and the scores awarded once selected.
-The public--jury difference reaches approximately
-3.2 percentage points for within-subregion
-choices and 6.2 percentage points for the share
-of points. Both remain significant after
-Holm correction ($p=0.012$).
-
-Community detection provides complementary
-evidence. The correspondence between Louvain
-communities and geographical subregions is
-stronger for the televote (ARI $=0.280$)
-than for juries (ARI $=0.091$).
-Public communities are also more reproducible
-across different Louvain initialisations.
-
-Figure~\ref{fig:rq2_strong} shows the same
-pattern on the aggregate 2016--2026 networks,
-dichotomised to keep only strong ties: an edge
-$i \to j$ is kept when $i$ gave $j$ at least
-6 points per eligible final (zeros included,
-at least three finals). The televote retains
-130 ties, 48\% within a subregion, and forms
-visible regional clusters; the jury retains
-74 ties, only 35\% within a subregion.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.75\textwidth]
-    {fig_strong_ties.png}
-    \caption{Strong voting ties 2016--2026
-    ($\geq$6 points per eligible final; Gephi,
-    ForceAtlas2). Node size: points received per
-    opportunity; coloured edges stay within a
-    UN subregion, grey edges cross subregions.}
-    \label{fig:rq2_strong}
-\end{figure}
-
-However, modularity \cite{newman2004} alone does not establish
-the presence of exceptional community structure.
-Under null models that preserve relevant
-network constraints, much of the observed
-modularity can arise without additional
-group-specific preferences.
-
-Linguistic homophily is present but weaker,
-and the evidence does not establish a clear
-difference between voting layers. Overall,
-the results indicate that geographical
-relationships explain a larger part of
-the distinction between jury and televote
-networks than broad linguistic classifications.
-
-
-
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=\textwidth]
     {rq2_opportunity.png}
@@ -629,37 +542,81 @@ networks than broad linguistic classifications.
     receiving points.}
     \label{fig:rq2_opportunity}
 \end{figure}
+\FloatBarrier
+
+The public--jury gaps are about 3.2 percentage points for
+within-subregion choices and 6.2 for within-subregion points
+(Holm $p=0.012$ for each). We adjust the two-sided paired tests
+across six geographical and linguistic homophily metrics.
+
+Across the ten editions, the consensus partitions of all voting
+countries align more closely with subregions in the televote
+(mean ARI $=0.273$) than for juries (mean ARI $=0.100$).
+NMI shows the same contrast (0.432 versus 0.265); both
+public--jury gaps have Holm $p=0.031$.
+
+Figure~\ref{fig:rq2_strong} provides a descriptive view of aggregate
+strong ties. We retain directed ties averaging at least 6 points
+per eligible final, including zeros and requiring at least three
+eligible finals. The televote has 130 ties, 48\% within subregions,
+and visible regional clusters. The jury has 74 ties, 35\% within
+subregions.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.80\textwidth]
+    {fig_strong_ties.png}
+    \caption{Strong voting ties 2016--2026
+    ($\geq$6 points per eligible final; Gephi,
+    ForceAtlas2). Node size: points received per
+    opportunity; coloured edges stay within a
+    UN subregion, grey edges cross subregions.}
+    \label{fig:rq2_strong}
+\end{figure}
+
+Modularity \cite{newman2004} measures excess within-community weight
+relative to a reference based on node strengths. The two upper-tail
+benchmarks rerun single-run Louvain on shuffled weights over fixed
+edges or on valid random ballots. Much of the observed modularity is consistent with these
+null models.
+
+Linguistic homophily is present but weaker,
+and the evidence does not establish a clear
+difference between voting layers. Overall,
+the results associate the public--jury contrast more
+strongly with the geographical groups examined than
+with the broad linguistic classifications.
 
 
-% RQ3 - Prestige, concentration and bridging
 
 
-\subsection{RQ3: Prestige, Concentration and Bridging}
+
+
+% RQ3 - Prestige, concentration and geographical diversity
+
+
+\FloatBarrier
+
+\subsection{RQ3: Prestige, Concentration and Geographical Diversity}
 \label{sec:rq3}
 
-The third research question investigates how voting
-support is distributed among finalists and whether
-successful countries attract votes primarily from
-their own geographical groups or from a broader
-set of countries.
+The Gini coefficient summarises inequality in received points among
+finalists. The top-three share is the fraction of all points won by
+the three leading finalists. Prestige is received points per eligible
+voter (normalised weighted in-strength). A finalist's \textit{home
+excess} is the share of its points from its own subregion minus
+that subregion's share of eligible voters.
 
-We measure concentration using the Gini coefficient
-of received points and the share of points awarded
-to the three most supported finalists. To assess
-the geographical origin of support, we calculate
-\textit{home excess}: the difference between the
-observed share of points received from a finalist's
-own subregion and the share expected from eligible
-voters. We also examine the participation ratio,
-which measures the diversity of geographical groups
-contributing to a finalist's support.
+The participation ratio $(1-\sum_g s_g^2)/(1-\sum_g e_g^2)$ compares
+the diversity of support with that of voting opportunities. Here
+$s_g$ is the share of points from group $g$ and $e_g$ is its share of
+eligible voters. A ratio of 1 indicates equal diversity. Lower
+values indicate more concentrated support.
 
-These measures are compared with random-ballot
-and popularity-preserving null models. The latter
-controls for the number of voters supporting each
-finalist and the total points received, helping
-distinguish geographical preferences from effects
-of overall popularity.
+Alongside random ballots, we use a popularity-preserving null
+that reassigns each finalist's observed positive scores among
+eligible voters. The number of supporters and the total points
+received stay fixed. Voters' outgoing ballots can change.
 
 \begin{table}[htbp]
 \centering
@@ -682,9 +639,7 @@ Participation ratio & 0.835 & 0.727 & 0.934 \\
 \end{tabular}
 \end{table}
 
-Voting support is considerably more concentrated
-than under random allocation. The mean Gini
-coefficient is 0.447 for juries and 0.538 for
+In Table~\ref{tab:rq3_results}, the mean Gini coefficient is 0.447 for juries and 0.538 for
 the televote, indicating that public points
 are distributed less evenly among finalists.
 Similarly, the three most supported finalists
@@ -713,51 +668,16 @@ Australia, Switzerland and Sweden with juries
 
 The televote also exhibits stronger geographical
 home bias. Its mean home excess is 0.193,
-compared with 0.083 for juries. This difference
-remains supported by the popularity-preserving
-analysis, indicating that the concentration of
-support within geographical groups cannot be
-explained solely by recipient popularity.
+compared with 0.083 for juries. 
+Figure~\ref{fig:rq3_popularity} compares observed
+geographical home excess with a popularity-preserving
+null model. Public home excess exceeds its own
+95\% null interval in all ten editions; its standardised
+deviation exceeds the jury deviation in nine of ten
+editions (except 2021). The paired, two-sided layer contrast yields Holm $p=0.039$ after
+adjustment across the twelve paired contrasts under this null.
 
-
-Figure~\ref{fig:rq3_popularity} compares
-the observed geographical home excess
-with a popularity-preserving null model.
-The public layer shows a consistently
-larger deviation from the null expectation,
-supporting the interpretation of stronger
-within-region voting preferences.
-
-
-An important methodological result concerns
-the relationship between prestige and the
-geographical diversity of support. The observed
-Spearman correlation between prestige and
-participation ratio is positive in both layers
-(0.717 for juries and 0.815 for the public).
-However, under a null model preserving recipient
-popularity, the expected correlations are
-0.753 and 0.836, respectively.
-
-Therefore, the positive correlations do not
-provide independent evidence that prestigious
-countries attract more geographically diverse
-support. Much of the apparent relationship
-arises mechanically because finalists receiving
-votes from more countries also tend to receive
-support from more geographical groups.
-
-Overall, the televote concentrates support
-on fewer finalists and exhibits stronger
-within-region preferences. At the same time,
-the analysis demonstrates that apparent
-relationships between network measures must
-be interpreted against null models that
-preserve relevant structural constraints.
-
-
-
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=\textwidth]
     {rq3_popularity_null.png}
@@ -773,39 +693,50 @@ preserve relevant structural constraints.
     support than expected under this reference.}
     \label{fig:rq3_popularity}
 \end{figure}
+\FloatBarrier
+
+
+Spearman correlation compares ranks of prestige and the participation
+ratio. The observed correlations (0.717 for juries and 0.815 for the
+public) are compatible with the null means of 0.753 and 0.836. A
+positive association is expected even at fixed popularity because
+finalists receiving votes from more countries tend to draw support
+from more groups.
+
+
+
+
 
 % RQ4 - Similarity and temporal stability
 
 
+\FloatBarrier
+
 \subsection{RQ4: Similarity and Temporal Stability}
 \label{sec:rq4}
 
-The fourth research question examines the agreement
-between jury and televote networks within each
-edition and the persistence of voting relationships
-across editions.
+On common eligible dyads, including zeros, Spearman measures rank
+association and Pearson measures linear association of standardised
+scores. Jaccard divides the number of shared positive arcs by the
+number present in either network. Residual Pearson measures linear
+association after removing additive voter and recipient effects
+fitted on common eligible dyads.
 
-Within-edition similarity is measured using
-Spearman and Pearson correlations on eligible
-dyads, together with the Jaccard index on positive
-voting relationships. To distinguish dyadic
-agreement from general voting tendencies, we
-also calculate the Pearson correlation between
-residuals obtained from an additive model with
-voter and recipient fixed effects, estimated on
-the common eligible dyads.
-
-Temporal stability is evaluated by comparing
-networks from different editions using the
-intersection of their eligibility masks.
-Particular attention is given to consecutive
-editions (lag 1), with longer lags examined
-descriptively.
+Lag 1 compares consecutive observed finals, including 2019 with 2021.
+Longer lags use fewer edition pairs and are descriptive. Both QAP-style
+nulls \cite{krackhardt1988} use 9,999 permutations within finalist and
+non-finalist roles, preserving annual eligibility masks and their
+intersections. Within an edition, we relabel one layer. For temporal
+comparisons, we independently relabel each edition, sharing its
+permutation across layers and all pairs involving that edition.
+Holm adjusts two-sided tests separately for the ten within-edition
+correlations and the three lag-1 tests (each layer and their gap).
 
 \begin{table}[htbp]
 \centering
 \caption{Mean similarity between consecutive
-editions (lag 1).}
+editions (lag 1). Differences are computed from
+unrounded means.}
 \label{tab:rq4_stability}
 \small
 \begin{tabular}{lccc}
@@ -829,37 +760,17 @@ the Pearson correlation between fixed-effect
 residuals is approximately 0.241.
 The latter exceeds its permutation-based
 reference in all ten editions
-(Holm-adjusted $p=0.0020$).
+(Holm-adjusted $p=0.002$).
 
-Across consecutive editions, the televote
-is substantially more stable than the jury.
-The mean residual Pearson correlation is
-0.472 for the public and 0.118 for juries,
-a difference of approximately 0.354.
-The public layer shows higher residual
-correlation in all nine consecutive-edition
+Across consecutive editions, the televote is more stable
+(Table~\ref{tab:rq4_stability}).
+Figure~\ref{fig:rq4_temporal} shows lag profiles and edition-pair
+correlations. The mean lag-1 residual Pearson correlation is 0.472
+for the public and 0.118 for juries, a gap of about 0.354.
+It is higher for the public in all nine consecutive-edition
 comparisons.
 
-
-Figure~\ref{fig:rq4_temporal} illustrates
-the greater temporal similarity of public
-voting networks across the observed editions.
-Longer-lag comparisons remain descriptive,
-particularly because fewer edition pairs
-are available at larger lags.
-
-
-To assess temporal structure, a joint
-QAP-style permutation null model
-\cite{krackhardt1988} independently
-reassigns country identities within their
-eligible roles for each edition. The same
-annual permutation is shared by jury and
-televote and reused across all comparisons
-involving that edition, preserving the
-dependence induced by shared years.
-
-Under this reference, the observed stability
+Under the temporal null, the observed stability
 of both layers and the public--jury difference
 are unusually high (Holm-adjusted
 $p=0.0006$ for each primary temporal test).
@@ -870,9 +781,7 @@ eligible in every edition (+0.346)
 and when excluding one edition at a time
 (range: +0.318 to +0.374).
 
-These findings indicate stronger persistence
-of televote relationships in the observed
-networks. However, the temporal permutation
+However, the temporal permutation
 test evaluates deviations from a null model
 without persistent country identities;
 it does not directly test equality between
@@ -900,38 +809,36 @@ two potentially persistent voting processes.
 % RQ5 - Prediction of strong votes
 
 
-\subsection{RQ5: Predicting Strong Voting Ties}
+\FloatBarrier
 
-RQ5 investigates whether geographical, linguistic,
-and community information improves the prediction
-of strong voting ties once historical voting
-patterns and recipient popularity are considered.
+\subsection{RQ5: Predicting Strong Voting Ties}
 
 For each voter and voting layer, the task is to
 rank eligible finalists and predict the three
 recipients of the highest scores (8, 10, and 12
 points). We use an expanding-window evaluation,
 training exclusively on previous editions and
-testing on the 2023--2026 finals. This prevents
-information from the target edition from entering
-historical features or community detection.
+testing on the 2023--2026 finals. 
+The random reference has expected Hit@3 of $3/n$ for $n$ eligible
+recipients. The History baseline ranks recipients by smoothed
+historical points per dyadic opportunity, with recipient popularity
+as a secondary criterion. It benchmarks the gains from the four
+nested L2-regularised logistic models \cite{hastie2009}.
 
-We compare a random reference, a simple historical
-ranking baseline, and four nested L2-regularised
-logistic models \cite{hastie2009}.
-M0a uses historical recipient popularity.
-M0b additionally incorporates previous dyadic
-voting, accumulated points, and reciprocity.
-M1 introduces geographical and linguistic
-similarity, while M2 further includes Louvain
-community membership and cohesion.
-Communities are reconstructed using only the
-available training history.
+M0a uses historical recipient popularity. M0b adds the dyad's
+historical high-score frequency in both directions and its smoothed
+mean points per opportunity. M1 adds geographical and linguistic
+similarity. M2 adds Louvain community membership and cohesion
+estimated from training history.
 
-The main evaluation measure is Hit@3, complemented
-by NDCG@3 and mean reciprocal rank (MRR).
-Table~\ref{tab:rq5_results} reports Hit@3 averaged
-across the four test editions.
+Hit@3\footnote{The notation $@k$ refers to the top $k$ predicted ranks.
+Hit@3 is the proportion of the three actual high-point recipients
+(8, 10 and 12 points) retrieved in the top three predictions.}
+measures recovery of the strongest votes. NDCG@3 gives hits less
+weight at lower ranks using a logarithmic discount and divides the
+top-three score by its ideal value. Mean reciprocal rank (MRR) averages the inverse rank
+of the first hit in the full ranking. Table~\ref{tab:rq5_results}
+reports Hit@3 averaged over the four test editions.
 
 \begin{table}[htbp]
 \centering
@@ -939,16 +846,16 @@ across the four test editions.
 \label{tab:rq5_results}
 \small
 \begin{tabular}{lcc}
-\hline
-Model & Jury & Public \\
-\hline
-Random reference & 0.1210 & 0.1210 \\
+\toprule
+\textbf{Model} & \textbf{Jury} & \textbf{Public} \\
+\midrule
+Random reference & 0.1211 & 0.1211 \\
 History baseline & 0.2461 & 0.4160 \\
 M0a: Popularity & 0.2344 & 0.2103 \\
 M0b: + Voting history & 0.2461 & 0.4273 \\
 M1: + Geography/language & \textbf{0.2553} & 0.4297 \\
 M2: + Communities & 0.2441 & \textbf{0.4322} \\
-\hline
+\bottomrule
 \end{tabular}
 \end{table}
 
@@ -959,7 +866,7 @@ M2: + Communities & 0.2441 & \textbf{0.4322} \\
     {rq5_hit3_by_model.png}
     \caption{Hit@3 performance for predicting the
     three highest-scoring recipients in the
-    2023--2026 Eurovision finals. Colored points
+    2023--2026 Eurovision finals. Coloured points
     represent individual test editions, black
     horizontal markers indicate the mean across
     editions, and the dashed horizontal line
@@ -978,8 +885,6 @@ public Hit@3, its improvement over M0b is
 small and varies across test editions.
 
 
-Historical voting information provides the
-largest improvement for public voting.
 Adding dyadic history to popularity increases
 mean Hit@3 from 0.2103 (M0a) to 0.4273 (M0b).
 By contrast, geography and language raise
@@ -989,9 +894,14 @@ community features add another 0.0025.
 For juries, the differences are smaller and
 less consistent. M1 achieves the highest mean
 Hit@3 (0.2553), whereas M2 falls to 0.2441.
-Thus, additional community features do not
-consistently improve predictions once voting
-history and contextual attributes are included.
+
+NDCG@3 and MRR show the same pattern. For the public, dyadic
+history raises NDCG@3 from 0.238 (M0a) to 0.463 (M0b) and MRR
+from 0.508 to 0.726, while M1 and M2 do not improve on M0b
+(NDCG@3 0.458 and 0.462; MRR 0.706 and 0.710). For juries,
+all models remain close (NDCG@3 0.241--0.271, MRR
+0.474--0.520). Per-edition values for all three metrics are
+in the project repository \cite{projectrepo}.
 
 The historical baseline also performs strongly,
 particularly for the public layer (0.4160),
@@ -999,12 +909,13 @@ indicating that much of the useful predictive
 information is already present in repeated
 voting relationships.
 
-Robustness checks include leave-one-edition-out
-comparisons, separate evaluations of previously
+Robustness checks include examining how mean results
+change when one test edition is omitted, separate
+evaluations of previously
 observed and unseen dyads, and deterministic
 tie-breaking. All 40 fitted models converged.
 A sensitivity analysis using Louvain consensus
-over 200 initializations changes the mean M2
+over 200 initialisations changes the mean M2
 Hit@3 by only +0.0023 for juries and -0.0068
 for the public.
 
@@ -1033,18 +944,17 @@ stronger geographical preferences, greater
 concentration of received points, and more
 persistent voting relationships.
 
-The five research questions provide complementary
-perspectives on these patterns. RQ1 identifies
+RQ1 identifies
 stronger high-score reciprocity and temporal
 persistence in the televote, while showing
-that some differences in triadic closure
-can be explained by recipient popularity.
+that transitivity comparisons need to be interpreted
+relative to the corresponding null expectations.
 RQ2 reveals stronger geographical homophily
 and greater correspondence between voting
 communities and geographical groups in the
 public layer. RQ3 confirms that public support
-is more concentrated and more dependent on
-within-region voting relationships.
+is more concentrated and characterised by stronger
+within-region voting patterns.
 
 RQ4 further demonstrates that both voting
 systems exhibit temporal regularities, with
@@ -1066,8 +976,9 @@ appear smaller and less consistent across
 the observed test editions.
 
 An important methodological finding is that
-not every apparent network pattern represents
-an independent structural effect. Several
+not every observed network pattern provides evidence
+of structure beyond the constraints represented
+in the corresponding null model. Several
 observed relationships, particularly those
 involving transitivity and the geographical
 diversity of support, can arise partly from
@@ -1100,21 +1011,12 @@ or universal voting behaviours.
 \section{Critique}
 \label{critique}
 
-The study presents several limitations concerning
-data representation, methodological assumptions,
-and the generalisability of its findings.
-
 First, Eurovision voting networks represent
 countries rather than the individual songs
 being evaluated. Musical genre, performance
 quality, running order, artist reputation,
 and other song-level characteristics are
-not included. Consequently, observed
-geographical preferences and persistent
-voting relationships cannot be interpreted
-as direct evidence of cultural affinity,
-political alliances, or causal influences.
-Future studies could incorporate song-level
+not included. Future studies could incorporate song-level
 features to separate these factors more clearly.
 
 Second, geographical and linguistic attributes
@@ -1124,18 +1026,15 @@ but overlook physical distances, migration
 patterns, and historical connections.
 Similarly, language-family classifications
 cannot fully represent multilingualism
-or cultural proximity. More detailed
-geographical distances and bilateral
-migration data could provide alternative
-explanations for observed voting patterns.
+or cultural proximity.
 
 Third, the interpretation of network measures
 depends on the selected null models.
-Although the analyses account for important
-constraints such as voting opportunities,
-recipient popularity, and temporal dependence,
-no single null model controls for every
-possible source of structure. In particular,
+The analyses use different null models to examine
+voting opportunities, recipient popularity and
+specific aspects of temporal structure. No single
+reference model captures every potential source
+of dependence or voting preference. In particular,
 the temporal permutation test in RQ4
 evaluates persistence relative to a model
 with exchangeable country identities,
@@ -1179,12 +1078,23 @@ the importance of distinguishing
 descriptive network patterns from
 statistically supported and
 predictively useful relationships.
-
+\newpage
 % ============================================
 % REFERENCES
 % ============================================
 
+\FloatBarrier
 \begin{thebibliography}{99}
+\raggedright % URLs would stretch justified lines.
+\setlength{\itemsep}{2pt}
+\setlength{\parsep}{0pt}
+
+\bibitem{bastian2009}
+Bastian, M., Heymann, S., and Jacomy, M. (2009).
+Gephi: An Open Source Software for Exploring and
+Manipulating Networks.
+\textit{Proceedings of ICWSM}.
+\url{https://doi.org/10.1609/icwsm.v3i1.13937}.
 
 \bibitem{blondel2008}
 Blondel, V. D., Guillaume, J.-L.,
@@ -1192,6 +1102,12 @@ Lambiotte, R., and Lefebvre, E. (2008).
 Fast unfolding of communities in large networks.
 \textit{Journal of Statistical Mechanics:
 Theory and Experiment}, 2008(10), P10008.
+\url{https://doi.org/10.1088/1742-5468/2008/10/P10008}.
+
+\bibitem{projectrepo}
+Botrugno, L., Fabrizio, D., Musa, S., and Samoggia, S. (2026).
+Eurovision voting networks, 2016--2026: code, data and results.
+\url{https://github.com/Samoggino/social-network-analysis}.
 
 \bibitem{danon2005}
 Danon, L., D\'iaz-Guilera, A.,
@@ -1199,11 +1115,11 @@ Duch, J., and Arenas, A. (2005).
 Comparing community structure identification.
 \textit{Journal of Statistical Mechanics:
 Theory and Experiment}, 2005(09), P09008.
+\url{https://doi.org/10.1088/1742-5468/2005/09/P09008}.
 
 \bibitem{eurovisionapi}
-EurovisionAPI.
-Eurovision Song Contest dataset.
-\url{https://github.com/EurovisionAPI}.
+EurovisionAPI. Eurovision Song Contest dataset.
+\url{https://github.com/EurovisionAPI/dataset}.
 
 \bibitem{ginsburgh2008}
 Ginsburgh, V. and Noury, A. G. (2008).
@@ -1211,6 +1127,7 @@ The Eurovision Song Contest:
 Is voting political or cultural?
 \textit{European Journal of Political Economy},
 24(1), 41--52.
+\url{https://doi.org/10.1016/j.ejpoleco.2007.05.004}.
 
 \bibitem{hagberg2008}
 Hagberg, A. A., Schult, D. A.,
@@ -1219,6 +1136,7 @@ Exploring network structure, dynamics,
 and function using NetworkX.
 \textit{Proceedings of the 7th Python
 in Science Conference}, 11--15.
+\url{https://doi.org/10.25080/TCWV9851}.
 
 \bibitem{hastie2009}
 Hastie, T., Tibshirani, R.,
@@ -1226,11 +1144,13 @@ and Friedman, J. (2009).
 \textit{The Elements of Statistical Learning:
 Data Mining, Inference, and Prediction}.
 2nd ed., Springer.
+\url{https://doi.org/10.1007/978-0-387-84858-7}.
 
-\bibitem{projectrepo}
-Botrugno, L., Fabrizio, D., Musa, S., and Samoggia, S. (2026).
-Eurovision voting networks, 2016--2026: code, data and results.
-\url{https://github.com/Samoggino/social-network-analysis}.
+\bibitem{hubert1985}
+Hubert, L. and Arabie, P. (1985).
+Comparing partitions.
+\textit{Journal of Classification}, 2, 193--218.
+\url{https://doi.org/10.1007/BF01908075}.
 
 \bibitem{krackhardt1988}
 Krackhardt, D. (1988).
@@ -1238,11 +1158,23 @@ Predicting with networks:
 Nonparametric multiple regression
 analysis of dyadic data.
 \textit{Social Networks}, 10(4), 359--381.
+\url{https://doi.org/10.1016/0378-8733(88)90004-4}.
+
+\bibitem{naturalearth}
+Natural Earth.
+\textit{Admin 0 Countries, 1:50m}.
+\url{https://www.naturalearthdata.com/downloads/50m-cultural-vectors/50m-admin-0-countries-2/}.
 
 \bibitem{newman2004}
 Newman, M. E. J. and Girvan, M. (2004).
 Finding and evaluating community structure.
 \textit{Physical Review E}, 69(2), 026113.
+\url{https://doi.org/10.1103/PhysRevE.69.026113}.
+
+\bibitem{unm49}
+United Nations Statistics Division.
+\textit{Standard Country or Area Codes for Statistical Use (M49)}.
+\url{https://unstats.un.org/unsd/methodology/m49/}.
 
 \end{thebibliography}
 
